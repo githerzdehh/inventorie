@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
+import { useNotificationsStore } from '@/stores/notifications'
 import AppButton from '@/components/common/app-button.vue'
 import AppCard from '@/components/common/app-card.vue'
 
 const route = useRoute()
+const notificationsStore = useNotificationsStore()
 
 function normalizeRouteParam(param: unknown): string {
   if (Array.isArray(param)) {
@@ -15,6 +17,12 @@ function normalizeRouteParam(param: unknown): string {
 }
 
 const giftId = computed(() => normalizeRouteParam(route.params.id))
+
+onMounted(() => {
+  if (giftId.value) {
+    notificationsStore.markAsRead(giftId.value)
+  }
+})
 </script>
 
 <template>
