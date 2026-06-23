@@ -47,6 +47,13 @@ const baseBottomNavItems: BottomNavItem[] = [
     value: 'saved',
     matches: ['/app/saved'],
   },
+  {
+    label: 'Settings',
+    icon: 'mdi-cog-outline',
+    to: '/app/settings',
+    value: 'settings',
+    matches: ['/app/settings'],
+  },
 ]
 
 const bottomNavItems = computed<BottomNavItem[]>(() => [
