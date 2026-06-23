@@ -81,6 +81,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/app/saved/SavedRecipesView.vue'),
       },
       {
+        path: 'settings',
+        name: 'settings',
+        component: () => import('@/views/app/settings/SettingsView.vue'),
+      },
+      {
         path: 'users',
         name: 'user-management',
         component: () => import('@/views/app/users/UserManagementView.vue'),
