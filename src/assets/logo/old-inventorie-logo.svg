@@ -1,0 +1,23 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 160 160"
+  role="img"
+  aria-label="Inventorie logo"
+>
+  <rect width="160" height="160" rx="32" fill="#C8798C" />
+  <path
+    d="M47 34h66a10 10 0 0 1 10 10v72a10 10 0 0 1-10 10H47a10 10 0 0 1-10-10V44a10 10 0 0 1 10-10Z"
+    fill="#FFFAF6"
+  />
+  <path d="M55 56h50M55 76h38M55 96h48" stroke="#A85D70" stroke-width="9" stroke-linecap="round" />
+  <path d="M52 126h56l-9 15H61l-9-15Z" fill="#E8BFA3" />
+  <circle cx="112" cy="112" r="25" fill="#9FBBC3" />
+  <path
+    d="M102 113l7 7 15-18"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
