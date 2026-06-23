@@ -12,6 +12,52 @@ const hasAcceptedTerms = ref(false)
       <p>Review INVENTORIÉ account policies, terms, and privacy commitments.</p>
     </div>
 
+    <div class="settings-view__preference-grid">
+      <v-card class="settings-view__preference-card" border elevation="0">
+        <v-card-item>
+          <template #prepend>
+            <v-avatar class="settings-view__icon" size="44">
+              <v-icon icon="mdi-translate" />
+            </v-avatar>
+          </template>
+          <v-card-title>App Language</v-card-title>
+          <v-card-subtitle>Choose labels, menus, and guidance language.</v-card-subtitle>
+        </v-card-item>
+        <v-card-actions>
+          <app-button
+            block
+            append-icon="mdi-chevron-right"
+            to="/app/settings/language"
+            variant="tonal"
+          >
+            Manage Language
+          </app-button>
+        </v-card-actions>
+      </v-card>
+
+      <v-card class="settings-view__preference-card" border elevation="0">
+        <v-card-item>
+          <template #prepend>
+            <v-avatar class="settings-view__icon" size="44">
+              <v-icon icon="mdi-currency-usd" />
+            </v-avatar>
+          </template>
+          <v-card-title>App Currency</v-card-title>
+          <v-card-subtitle>Choose totals, budgets, and receipt summary currency.</v-card-subtitle>
+        </v-card-item>
+        <v-card-actions>
+          <app-button
+            block
+            append-icon="mdi-chevron-right"
+            to="/app/settings/currency"
+            variant="tonal"
+          >
+            Manage Currency
+          </app-button>
+        </v-card-actions>
+      </v-card>
+    </div>
+
     <v-card class="settings-view__legal-card" border elevation="0">
       <v-card-item>
         <template #prepend>
@@ -290,9 +336,19 @@ const hasAcceptedTerms = ref(false)
 </template>
 
 <style scoped>
+.settings-view__preference-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .settings-view__legal-card,
-.settings-view__agreement {
+.settings-view__agreement,
+.settings-view__preference-card {
   background: var(--color-surface);
+}
+
+.settings-view__preference-card :deep(.v-card-actions) {
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 .settings-view__icon {
@@ -360,5 +416,11 @@ const hasAcceptedTerms = ref(false)
 
 .settings-view__continue {
   margin-top: var(--space-4);
+}
+
+@media (min-width: 760px) {
+  .settings-view__preference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>
