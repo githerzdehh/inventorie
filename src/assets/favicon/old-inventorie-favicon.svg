@@ -4,13 +4,13 @@
   role="img"
   aria-label="Inventorie favicon"
 >
-  <rect width="64" height="64" rx="14" fill="#C8798C" />
+  <rect width="64" height="64" rx="14" fill="#020BDF" />
   <path
     d="M20 13h24a5 5 0 0 1 5 5v28a5 5 0 0 1-5 5H20a5 5 0 0 1-5-5V18a5 5 0 0 1 5-5Z"
-    fill="#FFFAF6"
+    fill="#FFFAF0"
   />
-  <path d="M24 25h17M24 34h13" stroke="#A85D70" stroke-width="5" stroke-linecap="round" />
-  <circle cx="45" cy="45" r="10" fill="#9FBBC3" />
+  <path d="M24 25h17M24 34h13" stroke="#01068F" stroke-width="5" stroke-linecap="round" />
+  <circle cx="45" cy="45" r="10" fill="#F18E06" />
   <path
     d="M40 45l3 3 7-8"
     fill="none"

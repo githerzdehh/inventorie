@@ -16,8 +16,8 @@ export default defineConfig({
         name: 'Inventorie',
         short_name: 'Inventorie',
         description: 'From scan to recipe, all in one vault.',
-        theme_color: '#C8798C',
-        background_color: '#FFFAF6',
+        theme_color: '#020BDF',
+        background_color: '#FFFAF0',
         display: 'standalone',
         start_url: '/',
         icons: [

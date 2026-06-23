@@ -11,21 +11,21 @@ declare global {
 
 const sourceImageSvg = `
 <svg xmlns="http://www.w3.org/2000/svg" width="560" height="980" viewBox="0 0 560 980">
-  <rect width="560" height="980" fill="#fffaf6"/>
-  <rect x="54" y="42" width="452" height="890" rx="24" fill="#ffffff" stroke="#dccfd2" stroke-width="4"/>
-  <text x="280" y="110" text-anchor="middle" font-family="monospace" font-size="28" fill="#352b2e">INVENTORIE TEST IMAGE</text>
-  <line x1="94" y1="150" x2="466" y2="150" stroke="#352b2e" stroke-width="3"/>
-  <text x="94" y="220" font-family="monospace" font-size="24" fill="#352b2e">EGGS LARGE 12PCS</text>
-  <text x="420" y="220" text-anchor="end" font-family="monospace" font-size="24" fill="#352b2e">112.00</text>
-  <text x="94" y="270" font-family="monospace" font-size="24" fill="#352b2e">CHICKEN BREAST 1KG</text>
-  <text x="420" y="270" text-anchor="end" font-family="monospace" font-size="24" fill="#352b2e">245.50</text>
-  <text x="94" y="320" font-family="monospace" font-size="24" fill="#352b2e">GARLIC</text>
-  <text x="420" y="320" text-anchor="end" font-family="monospace" font-size="24" fill="#352b2e">35.00</text>
-  <text x="94" y="370" font-family="monospace" font-size="24" fill="#352b2e">WHITE RICE 5KG</text>
-  <text x="420" y="370" text-anchor="end" font-family="monospace" font-size="24" fill="#352b2e">330.00</text>
-  <line x1="94" y1="420" x2="466" y2="420" stroke="#dccfd2" stroke-width="3"/>
-  <text x="94" y="480" font-family="monospace" font-size="24" font-weight="700" fill="#352b2e">TOTAL</text>
-  <text x="420" y="480" text-anchor="end" font-family="monospace" font-size="24" font-weight="700" fill="#352b2e">773.08</text>
+  <rect width="560" height="980" fill="#fffaf0"/>
+  <rect x="54" y="42" width="452" height="890" rx="24" fill="#ffffff" stroke="#f9aa11" stroke-width="4"/>
+  <text x="280" y="110" text-anchor="middle" font-family="monospace" font-size="28" fill="#111111">INVENTORIE TEST IMAGE</text>
+  <line x1="94" y1="150" x2="466" y2="150" stroke="#111111" stroke-width="3"/>
+  <text x="94" y="220" font-family="monospace" font-size="24" fill="#111111">EGGS LARGE 12PCS</text>
+  <text x="420" y="220" text-anchor="end" font-family="monospace" font-size="24" fill="#111111">112.00</text>
+  <text x="94" y="270" font-family="monospace" font-size="24" fill="#111111">CHICKEN BREAST 1KG</text>
+  <text x="420" y="270" text-anchor="end" font-family="monospace" font-size="24" fill="#111111">245.50</text>
+  <text x="94" y="320" font-family="monospace" font-size="24" fill="#111111">GARLIC</text>
+  <text x="420" y="320" text-anchor="end" font-family="monospace" font-size="24" fill="#111111">35.00</text>
+  <text x="94" y="370" font-family="monospace" font-size="24" fill="#111111">WHITE RICE 5KG</text>
+  <text x="420" y="370" text-anchor="end" font-family="monospace" font-size="24" fill="#111111">330.00</text>
+  <line x1="94" y1="420" x2="466" y2="420" stroke="#f9aa11" stroke-width="3"/>
+  <text x="94" y="480" font-family="monospace" font-size="24" font-weight="700" fill="#111111">TOTAL</text>
+  <text x="420" y="480" text-anchor="end" font-family="monospace" font-size="24" font-weight="700" fill="#111111">773.08</text>
 </svg>
 `
 
