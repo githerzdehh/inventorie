@@ -86,6 +86,16 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/app/settings/SettingsView.vue'),
       },
       {
+        path: 'settings/language',
+        name: 'settings-language',
+        component: () => import('@/views/app/settings/LanguageSettingsView.vue'),
+      },
+      {
+        path: 'settings/currency',
+        name: 'settings-currency',
+        component: () => import('@/views/app/settings/CurrencySettingsView.vue'),
+      },
+      {
         path: 'users',
         name: 'user-management',
         component: () => import('@/views/app/users/UserManagementView.vue'),
