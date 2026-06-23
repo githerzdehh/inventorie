@@ -15,6 +15,36 @@ coverage
 *.local
 public/ocr/
 
+# Android / Gradle
+android/.gradle/
+android/**/build/
+android/**/.cxx/
+android/**/.externalNativeBuild/
+android/local.properties
+android/**/*.iml
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+*.class
+
+# Capacitor generated Android assets/config
+android/capacitor-cordova-android-plugins/
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/app/src/main/res/xml/config.xml
+
+# Python / PyScript runtime caches
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
