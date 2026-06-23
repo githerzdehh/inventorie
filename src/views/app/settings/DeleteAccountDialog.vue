@@ -3,14 +3,17 @@ import { computed, ref, watch } from 'vue'
 import AppButton from '@/components/common/app-button.vue'
 import { useAuthStore } from '@/stores/auth'
 
-const isOpen = defineModel<boolean>({ default: false })
-
 const authStore = useAuthStore()
+const isOpen = ref(false)
 const feedback = ref('')
 const hasConfirmedIntent = ref(false)
 const isSubmitting = ref(false)
 
 const canSubmitDeletionRequest = computed(() => hasConfirmedIntent.value && !isSubmitting.value)
+
+function openDialog() {
+  isOpen.value = true
+}
 
 function closeDialog() {
   isOpen.value = false
@@ -44,6 +47,19 @@ watch(isOpen, (open) => {
 </script>
 
 <template>
+  <v-card class="delete-account-dialog__danger-card" border elevation="0">
+    <button class="delete-account-dialog__delete-row" type="button" @click="openDialog">
+      <span class="delete-account-dialog__delete-icon" aria-hidden="true">
+        <v-icon icon="mdi-delete-outline" />
+      </span>
+      <span class="delete-account-dialog__delete-copy">
+        <strong>Delete account</strong>
+        <small>Permanently request deletion of your INVENTORIÉ account and data.</small>
+      </span>
+      <v-icon class="delete-account-dialog__delete-chevron" icon="mdi-chevron-right" />
+    </button>
+  </v-card>
+
   <v-dialog v-model="isOpen" max-width="560" persistent scrim="rgba(16, 24, 40, 0.62)">
     <v-card class="delete-account-dialog" elevation="18">
       <v-card-text class="delete-account-dialog__body">
@@ -123,6 +139,59 @@ watch(isOpen, (open) => {
 </template>
 
 <style scoped>
+.delete-account-dialog__danger-card {
+  overflow: hidden;
+  background: var(--color-surface);
+  border-color: color-mix(in srgb, var(--color-danger) 28%, transparent) !important;
+}
+
+.delete-account-dialog__delete-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-3);
+  align-items: center;
+  width: 100%;
+  padding: var(--space-4);
+  color: var(--color-danger);
+  text-align: left;
+  border: 0;
+  background: var(--color-danger-soft);
+  cursor: pointer;
+}
+
+.delete-account-dialog__delete-row:focus-visible {
+  outline: 2px solid var(--color-danger);
+  outline-offset: 3px;
+}
+
+.delete-account-dialog__delete-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  color: var(--color-surface);
+  background: var(--color-danger);
+}
+
+.delete-account-dialog__delete-copy {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.delete-account-dialog__delete-copy strong {
+  font-size: 1rem;
+}
+
+.delete-account-dialog__delete-copy small {
+  color: var(--color-muted);
+  font-size: 0.88rem;
+}
+
+.delete-account-dialog__delete-chevron {
+  color: var(--color-danger);
+}
+
 .delete-account-dialog {
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--color-danger) 26%, transparent);

@@ -4,7 +4,6 @@ import AppButton from '@/components/common/app-button.vue'
 import DeleteAccountDialog from './DeleteAccountDialog.vue'
 
 const hasAcceptedTerms = ref(false)
-const isDeleteAccountDialogOpen = ref(false)
 </script>
 
 <template>
@@ -269,22 +268,7 @@ const isDeleteAccountDialogOpen = ref(false)
       </v-card-text>
     </v-card>
 
-    <v-card class="settings-view__danger-card" border elevation="0">
-      <button
-        class="settings-view__delete-row"
-        type="button"
-        @click="isDeleteAccountDialogOpen = true"
-      >
-        <span class="settings-view__delete-icon" aria-hidden="true">
-          <v-icon icon="mdi-delete-outline" />
-        </span>
-        <span class="settings-view__delete-copy">
-          <strong>Delete account</strong>
-          <small>Permanently request deletion of your INVENTORIÉ account and data.</small>
-        </span>
-        <v-icon class="settings-view__delete-chevron" icon="mdi-chevron-right" />
-      </button>
-    </v-card>
+    <delete-account-dialog />
 
     <v-card class="settings-view__agreement" border elevation="0">
       <v-card-text>
@@ -305,14 +289,12 @@ const isDeleteAccountDialogOpen = ref(false)
         </app-button>
       </v-card-text>
     </v-card>
-    <delete-account-dialog v-model="isDeleteAccountDialogOpen" />
   </section>
 </template>
 
 <style scoped>
 .settings-view__legal-card,
-.settings-view__agreement,
-.settings-view__danger-card {
+.settings-view__agreement {
   background: var(--color-surface);
 }
 
@@ -373,57 +355,6 @@ const isDeleteAccountDialogOpen = ref(false)
 .settings-view__privacy-block {
   display: grid;
   gap: var(--space-2);
-}
-
-.settings-view__danger-card {
-  border-color: color-mix(in srgb, var(--color-danger) 28%, transparent) !important;
-}
-
-.settings-view__delete-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: var(--space-3);
-  align-items: center;
-  width: 100%;
-  padding: var(--space-4);
-  color: var(--color-danger);
-  text-align: left;
-  border: 0;
-  background: var(--color-danger-soft);
-  cursor: pointer;
-}
-
-.settings-view__delete-row:focus-visible {
-  outline: 2px solid var(--color-danger);
-  outline-offset: 3px;
-}
-
-.settings-view__delete-icon {
-  display: inline-grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 999px;
-  color: var(--color-surface);
-  background: var(--color-danger);
-}
-
-.settings-view__delete-copy {
-  display: grid;
-  gap: var(--space-1);
-}
-
-.settings-view__delete-copy strong {
-  font-size: 1rem;
-}
-
-.settings-view__delete-copy small {
-  color: var(--color-muted);
-  font-size: 0.88rem;
-}
-
-.settings-view__delete-chevron {
-  color: var(--color-danger);
 }
 
 .settings-view__agreement :deep(.v-selection-control) {
