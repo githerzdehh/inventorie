@@ -86,6 +86,16 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/app/settings/SettingsView.vue'),
       },
       {
+        path: 'notifications',
+        name: 'notifications',
+        component: () => import('@/views/app/notifications/NotificationsView.vue'),
+      },
+      {
+        path: 'notifications/friend-gift/:id',
+        name: 'friend-gift-details',
+        component: () => import('@/views/app/notifications/FriendGiftDetailsView.vue'),
+      },
+      {
         path: 'users',
         name: 'user-management',
         component: () => import('@/views/app/users/UserManagementView.vue'),

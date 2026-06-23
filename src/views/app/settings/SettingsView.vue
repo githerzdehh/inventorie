@@ -12,6 +12,23 @@ const hasAcceptedTerms = ref(false)
       <p>Review INVENTORIÉ account policies, terms, and privacy commitments.</p>
     </div>
 
+    <v-card class="settings-view__notifications-card" border elevation="0" to="/app/notifications">
+      <v-card-item>
+        <template #prepend>
+          <v-avatar class="settings-view__icon" size="44">
+            <v-icon icon="mdi-bell-badge-outline" />
+          </v-avatar>
+        </template>
+        <v-card-title>Notifications</v-card-title>
+        <v-card-subtitle>
+          Review friend gifts, pantry alerts, and freshness reminders.
+        </v-card-subtitle>
+        <template #append>
+          <v-icon icon="mdi-chevron-right" />
+        </template>
+      </v-card-item>
+    </v-card>
+
     <v-card class="settings-view__legal-card" border elevation="0">
       <v-card-item>
         <template #prepend>
@@ -291,8 +308,13 @@ const hasAcceptedTerms = ref(false)
 
 <style scoped>
 .settings-view__legal-card,
+.settings-view__notifications-card,
 .settings-view__agreement {
   background: var(--color-surface);
+}
+
+.settings-view__notifications-card {
+  cursor: pointer;
 }
 
 .settings-view__icon {
