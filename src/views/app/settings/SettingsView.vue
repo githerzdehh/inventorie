@@ -277,7 +277,7 @@ async function signOut() {
             </v-avatar>
           </template>
           <v-card-title>Notifications</v-card-title>
-          <v-card-subtitle>Review activity, friend gifts, and unread updates.</v-card-subtitle>
+          <v-card-subtitle>Review activity and unread updates.</v-card-subtitle>
         </v-card-item>
         <v-card-actions>
           <app-button
