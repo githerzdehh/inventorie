@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AppButton from '@/components/common/app-button.vue'
+import DeleteAccountDialog from './DeleteAccountDialog.vue'
 
 const hasAcceptedTerms = ref(false)
 </script>
@@ -312,6 +313,8 @@ const hasAcceptedTerms = ref(false)
         </section>
       </v-card-text>
     </v-card>
+
+    <delete-account-dialog />
 
     <v-card class="settings-view__agreement" border elevation="0">
       <v-card-text>
