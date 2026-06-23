@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Inventorie</string>
+    <string name="title_activity_main">Inventorie</string>
+    <string name="package_name">com.creatizan.inventorie</string>
+    <string name="custom_url_scheme">com.creatizan.inventorie</string>
+</resources>

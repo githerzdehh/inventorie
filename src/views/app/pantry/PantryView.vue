@@ -224,7 +224,7 @@ watch(
           icon="mdi-plus-circle-outline"
           tone="secondary"
           variant="tonal"
-          @click="openManualDialog"
+          @click="() => openManualDialog()"
         >
           Add manually
         </app-button>

@@ -23,11 +23,20 @@ type TesseractWorker = {
 type CreateWorker = (
   language?: string,
   oem?: unknown,
-  options?: {
-    logger?: (message: TesseractLoggerMessage) => void
-    errorHandler?: (error: unknown) => void
-  },
+  options?: TesseractWorkerOptions,
 ) => Promise<TesseractWorker>
+
+type TesseractWorkerOptions = {
+  logger?: (message: TesseractLoggerMessage) => void
+  errorHandler?: (error: unknown) => void
+  workerPath?: string
+  corePath?: string
+  langPath?: string
+  cachePath?: string
+  cacheMethod?: 'write' | 'readOnly' | 'refresh' | 'none'
+  workerBlobURL?: boolean
+  gzip?: boolean
+}
 
 interface TesseractModule {
   default?: {
@@ -35,6 +44,7 @@ interface TesseractModule {
     recognize?: (
       image: OcrImageInput,
       langs?: string,
+      options?: TesseractWorkerOptions,
     ) => Promise<{
       data: {
         text: string
@@ -46,6 +56,7 @@ interface TesseractModule {
   recognize?: (
     image: OcrImageInput,
     langs?: string,
+    options?: TesseractWorkerOptions,
   ) => Promise<{
     data: {
       text: string
@@ -117,6 +128,32 @@ class OcrTimeoutError extends Error {
   constructor() {
     super('Image scanning is taking too long. Try a clearer or smaller source image.')
     this.name = 'OcrTimeoutError'
+  }
+}
+
+function resolveBrowserAssetUrl(path: string): string {
+  if (typeof window === 'undefined') {
+    return path
+  }
+
+  return new URL(path, window.location.origin).href
+}
+
+function getTesseractWorkerOptions(
+  options: OcrScanOptions,
+  logger: (message: TesseractLoggerMessage) => void,
+): TesseractWorkerOptions {
+  return {
+    workerPath: resolveBrowserAssetUrl('/ocr/tesseract/worker.min.js'),
+    corePath: resolveBrowserAssetUrl('/ocr/tesseract/core'),
+    langPath: resolveBrowserAssetUrl('/ocr/tesseract/lang'),
+    cachePath: 'inventorie-ocr',
+    workerBlobURL: false,
+    gzip: false,
+    logger,
+    errorHandler: (error) => {
+      emitDebug(options, 'warning', 'tesseract', 'Tesseract reported a worker warning.', error)
+    },
   }
 }
 
@@ -402,18 +439,14 @@ async function recognizeWithTesseract(image: OcrImageInput, options: OcrScanOpti
 
   const ocrPromise = (async () => {
     if (createWorker) {
-      worker = await createWorker('eng', undefined, {
-        logger: (message) => {
-          const progress = typeof message.progress === 'number' ? message.progress : 0
-          const status = normalizeTesseractStatus(message.status)
+      const workerOptions = getTesseractWorkerOptions(options, (message) => {
+        const progress = typeof message.progress === 'number' ? message.progress : 0
+        const status = normalizeTesseractStatus(message.status)
 
-          emitProgress(options, status, 0.25 + progress * 0.7, 'tesseract', message)
-          emitDebug(options, 'info', 'tesseract', status, message)
-        },
-        errorHandler: (error) => {
-          emitDebug(options, 'warning', 'tesseract', 'Tesseract reported a worker warning.', error)
-        },
+        emitProgress(options, status, 0.25 + progress * 0.7, 'tesseract', message)
+        emitDebug(options, 'info', 'tesseract', status, message)
       })
+      worker = await createWorker('eng', undefined, workerOptions)
 
       const result = await worker.recognize(image)
       await worker.terminate?.()
@@ -432,7 +465,17 @@ async function recognizeWithTesseract(image: OcrImageInput, options: OcrScanOpti
       'ocr-worker',
       'Tesseract worker unavailable. Using direct recognize fallback.',
     )
-    return recognize(image, 'eng')
+    return recognize(
+      image,
+      'eng',
+      getTesseractWorkerOptions(options, (message) => {
+        const progress = typeof message.progress === 'number' ? message.progress : 0
+        const status = normalizeTesseractStatus(message.status)
+
+        emitProgress(options, status, 0.25 + progress * 0.7, 'tesseract', message)
+        emitDebug(options, 'info', 'tesseract', status, message)
+      }),
+    )
   })()
 
   let timeoutId: ReturnType<typeof setTimeout> | null = null
