@@ -30,6 +30,10 @@ function updateDetectedItem(id: string, updates: Partial<DetectedReceiptItem>) {
   scannerStore.updateDetectedItem(id, updates)
 }
 
+function addReviewItem() {
+  scannerStore.addDetectedItem()
+}
+
 async function saveSelectedItems() {
   if (!selectedItems.value.length || isSaving.value) {
     return
@@ -60,9 +64,19 @@ async function saveSelectedItems() {
 
 <template>
   <section class="review-items-view app-page app-stack">
-    <div class="app-page-heading">
-      <h2>Review items</h2>
-      <p>Check detected grocery items, correct labels, and save selected items to the pantry.</p>
+    <div class="review-items-view__heading">
+      <div class="app-page-heading">
+        <h2>Review items</h2>
+        <p>Check grocery items, add anything missing, and set details before saving.</p>
+      </div>
+      <app-button
+        icon="mdi-plus-circle-outline"
+        tone="secondary"
+        variant="tonal"
+        @click="addReviewItem"
+      >
+        Add item
+      </app-button>
     </div>
 
     <v-alert
@@ -99,6 +113,7 @@ async function saveSelectedItems() {
       <v-card-text class="review-items-view__content">
         <detected-item-list
           :items="scannerStore.detectedItems"
+          :show-diagnostics="authStore.isSuperAdmin"
           @remove="scannerStore.removeDetectedItem"
           @toggle="scannerStore.toggleDetectedItem"
           @update="updateDetectedItem"
@@ -138,8 +153,8 @@ async function saveSelectedItems() {
       icon="mdi-image-off-outline"
       title="No detected items"
       :description="emptyStateDescription"
-      action-label="Go to scan"
-      action-to="/app/scan"
+      action-label="Add item"
+      @action="addReviewItem"
     />
 
     <v-expansion-panels
@@ -164,6 +179,11 @@ async function saveSelectedItems() {
 </template>
 
 <style scoped>
+.review-items-view__heading {
+  display: grid;
+  gap: var(--space-3);
+}
+
 .review-items-view__panel {
   background: var(--color-surface);
   border-color: var(--color-border);
@@ -214,5 +234,12 @@ async function saveSelectedItems() {
   background: var(--color-accent-soft);
   border: 1px solid color-mix(in srgb, var(--color-accent) 34%, transparent);
   border-radius: var(--radius-lg);
+}
+
+@media (min-width: 680px) {
+  .review-items-view__heading {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+  }
 }
 </style>

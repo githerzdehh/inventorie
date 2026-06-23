@@ -5,7 +5,10 @@ import type {
   ScanInputMethod,
   ScanRecord,
   ScannerDebugEvent,
+  StorageLocation,
 } from '@/composables/app-types'
+import { calculateUseByDate } from '@/composables/date-utils'
+import { resolveIngredientId } from '@/composables/ingredient-utils'
 import {
   createCompressedImagePreview,
   type ImagePreviewResult,
@@ -18,6 +21,7 @@ import {
 import { scanReceiptImage } from '@/composables/useOcrScanner'
 import { parseReceiptText } from '@/composables/useReceiptParser'
 import { useScanStorage } from '@/composables/useScanStorage'
+import { mockStorageRules } from '@/mocks/data/mock-storage-rules'
 import { mockSampleReceipts } from '@/mocks/data/mock-sample-receipts'
 
 interface ScannerState {
@@ -72,6 +76,21 @@ function makeDebugEventId(): string {
   return `debug-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+function makeDetectedItemId(label: string): string {
+  const slug =
+    label
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      .slice(0, 32) || 'item'
+
+  if (globalThis.crypto?.randomUUID) {
+    return `detected-manual-${slug}-${globalThis.crypto.randomUUID()}`
+  }
+
+  return `detected-manual-${slug}-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
 function revokeObjectUrl(url: string | null): void {
   if (url?.startsWith('blob:')) {
     URL.revokeObjectURL(url)
@@ -92,6 +111,33 @@ function getOriginalFileName(file: File | null, inputMethod: ScanInputMethod): s
   }
 
   return inputMethod === 'sample' ? 'Sample source image' : null
+}
+
+function getStorageDefaults(
+  ingredientId: string | null,
+  dateInput: string,
+): { storageLocation: StorageLocation; estimatedUseByDate: string | null } {
+  const storageRule = ingredientId
+    ? mockStorageRules.find((rule) => rule.ingredientId === ingredientId)
+    : null
+
+  return {
+    storageLocation: storageRule?.storageLocation ?? 'pantry',
+    estimatedUseByDate: calculateUseByDate(dateInput, storageRule?.suggestedDays),
+  }
+}
+
+function withDetectedItemDefaults(
+  item: DetectedReceiptItem,
+  dateInput: string,
+): DetectedReceiptItem {
+  const storageDefaults = getStorageDefaults(item.ingredientId, dateInput)
+
+  return {
+    ...item,
+    storageLocation: item.storageLocation ?? storageDefaults.storageLocation,
+    estimatedUseByDate: item.estimatedUseByDate ?? storageDefaults.estimatedUseByDate,
+  }
 }
 
 export const useScannerStore = defineStore('scanner', {
@@ -295,7 +341,9 @@ export const useScannerStore = defineStore('scanner', {
           textLength: ocrResult.text.length,
           confidence: ocrResult.confidence,
         })
-        this.detectedItems = parseReceiptText(ocrResult.text)
+        this.detectedItems = parseReceiptText(ocrResult.text).map((item) =>
+          withDetectedItemDefaults(item, this.startedAt ?? new Date().toISOString()),
+        )
 
         if (!this.detectedItems.length) {
           const message =
@@ -368,7 +416,9 @@ export const useScannerStore = defineStore('scanner', {
       this.uploadedInputMethod = 'sample'
       this.rawOcrText = sampleReceipt.ocrText
       this.ocrConfidence = 0.98
-      this.detectedItems = parseReceiptText(sampleReceipt.ocrText)
+      this.detectedItems = parseReceiptText(sampleReceipt.ocrText).map((item) =>
+        withDetectedItemDefaults(item, this.startedAt ?? new Date().toISOString()),
+      )
       this.setProgress('Scan completed', 1, 'sample-receipt')
       this.setSuccess(`Sample scan loaded. ${this.detectedItems.length} possible items found.`)
       this.addDebugEvent('info', 'sample-receipt', 'Loaded development sample receipt.', {
@@ -473,7 +523,53 @@ export const useScannerStore = defineStore('scanner', {
         return
       }
 
-      Object.assign(detectedItem, updates)
+      const nextUpdates: Partial<DetectedReceiptItem> = {
+        ...updates,
+      }
+
+      if (typeof updates.displayName === 'string' && typeof updates.ingredientId === 'undefined') {
+        nextUpdates.ingredientId = resolveIngredientId(null, updates.displayName)
+
+        if (!detectedItem.estimatedUseByDate) {
+          const storageDefaults = getStorageDefaults(
+            nextUpdates.ingredientId,
+            this.startedAt ?? new Date().toISOString(),
+          )
+          nextUpdates.storageLocation = storageDefaults.storageLocation
+          nextUpdates.estimatedUseByDate = storageDefaults.estimatedUseByDate
+        }
+      }
+
+      Object.assign(detectedItem, nextUpdates)
+    },
+    addDetectedItem(overrides: Partial<DetectedReceiptItem> = {}) {
+      const displayName = overrides.displayName?.trim() || 'New pantry item'
+      const ingredientId = resolveIngredientId(overrides.ingredientId, displayName)
+      const storageDefaults = getStorageDefaults(
+        ingredientId,
+        this.startedAt ?? new Date().toISOString(),
+      )
+      const item: DetectedReceiptItem = {
+        id: overrides.id ?? makeDetectedItemId(displayName),
+        rawLabel: overrides.rawLabel ?? displayName,
+        ingredientId,
+        displayName,
+        description: overrides.description ?? null,
+        quantity: overrides.quantity ?? 1,
+        unit: overrides.unit ?? 'item',
+        storageLocation: overrides.storageLocation ?? storageDefaults.storageLocation,
+        estimatedUseByDate: overrides.estimatedUseByDate ?? storageDefaults.estimatedUseByDate,
+        confidence: overrides.confidence ?? 1,
+        selected: overrides.selected ?? true,
+      }
+
+      this.detectedItems = [...this.detectedItems, item]
+      this.addDebugEvent('info', 'review-items', 'Added an item during review.', {
+        id: item.id,
+        displayName: item.displayName,
+      })
+
+      return item
     },
     removeDetectedItem(id: string) {
       this.detectedItems = this.detectedItems.filter((item) => item.id !== id)

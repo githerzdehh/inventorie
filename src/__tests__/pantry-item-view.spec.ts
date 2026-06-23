@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PantryItem, ScanRecord } from '@/composables/app-types'
 import vuetify from '@/plugins/vuetify'
+import { useAuthStore } from '@/stores/auth'
 import { usePantryStore } from '@/stores/pantry'
 import { useScansStore } from '@/stores/scans'
 import PantryItemView from '@/views/app/pantry/PantryItemView.vue'
@@ -68,6 +69,7 @@ function makeScanRecord(overrides: Partial<ScanRecord> = {}): ScanRecord {
 
 describe('PantryItemView', () => {
   beforeEach(() => {
+    window.localStorage.clear()
     pinia = createPinia()
 
     setActivePinia(pinia)
@@ -76,6 +78,8 @@ describe('PantryItemView', () => {
   })
 
   it('renders pantry and scan provenance details', async () => {
+    useAuthStore().login('superadmin@inventorie.local', 'super123')
+
     render(PantryItemView, {
       global: {
         plugins: [pinia, vuetify],
@@ -90,6 +94,23 @@ describe('PantryItemView', () => {
       expect(screen.getByText('Upload image')).toBeInTheDocument()
       expect(screen.getByText('grocery-upload.jpg')).toBeInTheDocument()
       expect(screen.getByText('MILK 1 L 120.00')).toBeInTheDocument()
+    })
+  })
+
+  it('hides scan provenance details from regular users', async () => {
+    useAuthStore().login('diane@inventorie.local', 'diane123')
+
+    render(PantryItemView, {
+      global: {
+        plugins: [pinia, vuetify],
+      },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Milk')).toBeInTheDocument()
+      expect(screen.queryByText('Scan details')).not.toBeInTheDocument()
+      expect(screen.queryByText('CVSCAN-20260618-120000-ABCD')).not.toBeInTheDocument()
+      expect(screen.queryByText('grocery-upload.jpg')).not.toBeInTheDocument()
     })
   })
 })

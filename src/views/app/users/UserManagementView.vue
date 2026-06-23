@@ -268,6 +268,9 @@ watch(
         </template>
         <v-card-title>{{ user.displayName }}</v-card-title>
         <v-card-subtitle>{{ user.username }} · {{ user.email }}</v-card-subtitle>
+        <v-card-subtitle class="user-management-view__credential">
+          Password: <code>{{ user.password }}</code>
+        </v-card-subtitle>
         <template #append>
           <v-chip class="user-management-view__role-chip" size="small">
             {{ userRoleLabels[user.role] }}
@@ -376,6 +379,15 @@ watch(
 .user-management-view__icon {
   color: var(--color-primary);
   background: var(--color-primary-soft);
+}
+
+.user-management-view__credential {
+  opacity: 1;
+}
+
+.user-management-view__credential code {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
 }
 
 .user-management-view__form {

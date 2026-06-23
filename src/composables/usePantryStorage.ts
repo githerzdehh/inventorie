@@ -5,6 +5,7 @@ import {
   markInventorieDexieUnavailable,
   type InventorieStorageBackend,
 } from '@/composables/useInventorieDatabase'
+import { mockPantryItems } from '@/mocks/data/mock-app'
 
 const localStorageKey = 'inventorie:pantry-items'
 
@@ -89,12 +90,22 @@ function sortPantryItems(items: PantryItem[]): PantryItem[] {
   )
 }
 
+function getDefaultPantryItems(): PantryItem[] {
+  return mockPantryItems.map((item) => ({ ...item }))
+}
+
 async function getPantryItems(): Promise<PantryItem[]> {
   try {
     const db = await getInventorieDatabase()
 
     if (!db) {
-      const items = sortPantryItems(getLocalStorageItems())
+      const localItems = getLocalStorageItems()
+
+      if (!localItems.length) {
+        setLocalStorageItems(getDefaultPantryItems())
+      }
+
+      const items = sortPantryItems(localItems.length ? localItems : getLocalStorageItems())
       logPantryStorage('info', 'Loaded pantry items from localStorage.', {
         backend: 'localStorage' as InventorieStorageBackend,
         count: items.length,
@@ -104,7 +115,14 @@ async function getPantryItems(): Promise<PantryItem[]> {
     }
 
     try {
-      const items = sortPantryItems(normalizePantryItems(await db.pantryItems.toArray(), 'dexie'))
+      let dexieItems = normalizePantryItems(await db.pantryItems.toArray(), 'dexie')
+
+      if (!dexieItems.length) {
+        dexieItems = getDefaultPantryItems()
+        await db.pantryItems.bulkPut(dexieItems)
+      }
+
+      const items = sortPantryItems(dexieItems)
       logPantryStorage('info', 'Loaded pantry items from Dexie.', {
         backend: 'dexie' as InventorieStorageBackend,
         count: items.length,
@@ -115,7 +133,13 @@ async function getPantryItems(): Promise<PantryItem[]> {
       markInventorieDexieUnavailable()
       logPantryStorage('warning', 'Failed to load from Dexie. Falling back to localStorage.')
 
-      const items = sortPantryItems(getLocalStorageItems())
+      const localItems = getLocalStorageItems()
+
+      if (!localItems.length) {
+        setLocalStorageItems(getDefaultPantryItems())
+      }
+
+      const items = sortPantryItems(localItems.length ? localItems : getLocalStorageItems())
       logPantryStorage('info', 'Loaded pantry items from localStorage.', {
         backend: 'localStorage' as InventorieStorageBackend,
         count: items.length,

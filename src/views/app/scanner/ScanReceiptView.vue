@@ -164,7 +164,13 @@ onBeforeUnmount(() => {
       </div>
 
       <div class="scan-receipt-view__hero-actions">
-        <app-button icon="mdi-history" tone="ghost" to="/app/scans" variant="tonal">
+        <app-button
+          v-if="authStore.isSuperAdmin"
+          icon="mdi-history"
+          tone="ghost"
+          to="/app/scans"
+          variant="tonal"
+        >
           Scan history
         </app-button>
         <app-button

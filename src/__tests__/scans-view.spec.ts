@@ -4,6 +4,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ScanRecord } from '@/composables/app-types'
 import vuetify from '@/plugins/vuetify'
+import { useAuthStore } from '@/stores/auth'
 import ScansView from '@/views/app/scanner/ScansView.vue'
 
 const scanStorageMock = vi.hoisted(() => ({
@@ -40,8 +41,7 @@ function makeScanRecord(overrides: Partial<ScanRecord> = {}): ScanRecord {
     note: 'Reference upload',
     inputMethod: 'upload',
     originalFileName: 'weekly-groceries.jpg',
-    imagePreviewDataUrl:
-      'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
+    imagePreviewDataUrl: 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==',
     imagePreviewWidth: 1200,
     imagePreviewHeight: 1600,
     imagePreviewByteSize: 2048,
@@ -59,17 +59,43 @@ function makeScanRecord(overrides: Partial<ScanRecord> = {}): ScanRecord {
 
 describe('ScansView', () => {
   beforeEach(() => {
+    window.localStorage.clear()
     setActivePinia(createPinia())
     scanStorageMock.getScanRecords.mockReset()
     scanStorageMock.saveScanRecord.mockReset()
     scanStorageMock.deleteScanRecord.mockReset()
   })
 
-  it('renders persisted scan image details and opens the history lightbox', async () => {
+  it('hides technical scan details for subscribed users', async () => {
     const router = makeRouter()
     const pinia = createPinia()
 
     setActivePinia(pinia)
+    useAuthStore().login('diane@inventorie.local', 'diane123')
+    scanStorageMock.getScanRecords.mockResolvedValue([makeScanRecord()])
+    await router.push('/')
+
+    render(ScansView, {
+      global: {
+        plugins: [pinia, router, vuetify],
+      },
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText('Scan records are managed automatically')).toBeInTheDocument()
+    })
+
+    expect(screen.queryByText('CVSCAN-20260619-101500-CAFE')).not.toBeInTheDocument()
+    expect(screen.queryByText('OCR confidence')).not.toBeInTheDocument()
+    expect(screen.queryByText('weekly-groceries.jpg')).not.toBeInTheDocument()
+  })
+
+  it('renders persisted scan image details for super admin users', async () => {
+    const router = makeRouter()
+    const pinia = createPinia()
+
+    setActivePinia(pinia)
+    useAuthStore().login('superadmin@inventorie.local', 'super123')
     scanStorageMock.getScanRecords.mockResolvedValue([makeScanRecord()])
     await router.push('/')
 

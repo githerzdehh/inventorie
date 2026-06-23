@@ -17,7 +17,7 @@ const showCredentialHints = false
 const redirectTo = computed(() => {
   const redirect = route.query.redirect
 
-  return typeof redirect === 'string' && redirect.startsWith('/app') ? redirect : '/app/scan'
+  return typeof redirect === 'string' && redirect.startsWith('/app') ? redirect : '/app/home'
 })
 
 async function submitLogin() {
@@ -106,6 +106,7 @@ async function submitLogin() {
   display: grid;
   gap: var(--space-3);
   justify-items: center;
+  margin-bottom: var(--space-6);
   text-align: center;
 }
 

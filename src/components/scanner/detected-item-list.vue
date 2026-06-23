@@ -1,17 +1,24 @@
 <script setup lang="ts">
 import { reactive, watch } from 'vue'
 import SelectMenuField from '@/components/common/select-menu-field.vue'
-import type { DetectedReceiptItem } from '@/composables/app-types'
+import type { DetectedReceiptItem, StorageLocation } from '@/composables/app-types'
 import {
   formatQuantity,
   getQuantityInputMode,
   quantityUnitOptions,
   validateQuantityInput,
 } from '@/composables/quantity-utils'
+import { storageLocationLabels } from '@/stores/pantry'
 
-const props = defineProps<{
-  items: DetectedReceiptItem[]
-}>()
+const props = withDefaults(
+  defineProps<{
+    items: DetectedReceiptItem[]
+    showDiagnostics?: boolean
+  }>(),
+  {
+    showDiagnostics: false,
+  },
+)
 
 const emit = defineEmits<{
   update: [id: string, updates: Partial<DetectedReceiptItem>]
@@ -21,6 +28,12 @@ const emit = defineEmits<{
 
 const quantityDrafts = reactive<Record<string, string>>({})
 const quantityErrors = reactive<Record<string, string | null>>({})
+const storageLocationItems = (
+  Object.entries(storageLocationLabels) as Array<[StorageLocation, string]>
+).map(([value, title]) => ({
+  value,
+  title,
+}))
 
 function syncQuantityDrafts() {
   for (const item of props.items) {
@@ -57,6 +70,32 @@ function handleUnitUpdate(item: DetectedReceiptItem, unit: string) {
     unit,
     quantity: result.quantity ?? Number.NaN,
   })
+}
+
+function normalizeStorageLocation(location: unknown): StorageLocation {
+  return typeof location === 'string' && location in storageLocationLabels
+    ? (location as StorageLocation)
+    : 'pantry'
+}
+
+function toDateInputValue(dateInput: string | null | undefined): string {
+  if (!dateInput) {
+    return ''
+  }
+
+  const date = new Date(dateInput)
+
+  return Number.isNaN(date.getTime()) ? '' : date.toISOString().slice(0, 10)
+}
+
+function fromDateInputValue(dateInput: string): string | null {
+  if (!dateInput) {
+    return null
+  }
+
+  const date = new Date(`${dateInput}T00:00:00.000`)
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
 }
 
 function getQuantityErrorMessages(itemId: string): string[] {
@@ -123,9 +162,28 @@ watch(() => props.items, syncQuantityDrafts, { deep: true, immediate: true })
             label="Unit"
             @update:model-value="handleUnitUpdate(item, $event)"
           />
+          <select-menu-field
+            :model-value="item.storageLocation ?? 'pantry'"
+            :items="storageLocationItems"
+            label="Storage"
+            @update:model-value="
+              emit('update', item.id, { storageLocation: normalizeStorageLocation($event) })
+            "
+          />
+          <v-text-field
+            :model-value="toDateInputValue(item.estimatedUseByDate)"
+            density="compact"
+            hide-details
+            label="Expiration date"
+            type="date"
+            variant="outlined"
+            @update:model-value="
+              emit('update', item.id, { estimatedUseByDate: fromDateInputValue(String($event)) })
+            "
+          />
         </div>
 
-        <div class="detected-item-list__meta">
+        <div v-if="showDiagnostics" class="detected-item-list__meta">
           <v-chip class="detected-item-list__chip detected-item-list__chip--accent" size="small">
             {{ Math.round(item.confidence * 100) }}% confidence
           </v-chip>
@@ -246,7 +304,7 @@ watch(() => props.items, syncQuantityDrafts, { deep: true, immediate: true })
 
 @media (min-width: 760px) {
   .detected-item-list__fields {
-    grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr) 7rem 7rem;
+    grid-template-columns: minmax(10rem, 1fr) minmax(10rem, 1fr) 7rem 7rem 9rem 11rem;
   }
 }
 

@@ -7,6 +7,7 @@ import type { ScanRecord } from '@/composables/app-types'
 import { formatDisplayDateTime } from '@/composables/date-utils'
 import { formatImageByteSize } from '@/composables/image-preview-utils'
 import { scanInputMethodLabel, scanRecordStatusLabel } from '@/composables/scan-record-utils'
+import { useAuthStore } from '@/stores/auth'
 import { useScansStore } from '@/stores/scans'
 
 interface ScanDraft {
@@ -14,6 +15,7 @@ interface ScanDraft {
   note: string
 }
 
+const authStore = useAuthStore()
 const scansStore = useScansStore()
 const scanDrafts = reactive<Record<string, ScanDraft>>({})
 const selectedRecordId = ref<string | null>(null)
@@ -147,206 +149,223 @@ watch(
   <section class="scans-view app-page app-stack">
     <div class="scans-view__header">
       <div class="app-page-heading">
-        <h2>Scan history</h2>
-        <p>Source image scans saved for pantry traceability.</p>
+        <h2>{{ authStore.isSuperAdmin ? 'Scan history' : 'Scanner' }}</h2>
+        <p>
+          {{
+            authStore.isSuperAdmin
+              ? 'Source image scans saved for pantry traceability.'
+              : 'Scan records stay in the background while your inventory stays easy to manage.'
+          }}
+        </p>
       </div>
       <app-button icon="mdi-image-search-outline" tone="primary" to="/app/scan">
         New scan
       </app-button>
     </div>
 
-    <v-alert
-      v-if="scansStore.errorMessage"
-      color="error"
-      icon="mdi-alert-circle-outline"
-      variant="tonal"
-    >
-      {{ scansStore.errorMessage }}
-    </v-alert>
-
-    <v-alert
-      v-if="scansStore.successMessage"
-      class="scans-view__success-alert"
-      icon="mdi-check-circle-outline"
-      variant="tonal"
-    >
-      {{ scansStore.successMessage }}
-    </v-alert>
-
-    <div v-show="scansStore.isLoading" class="scans-view__loading">
-      <v-progress-circular color="accent" indeterminate />
-    </div>
-
-    <div v-if="hasScanRecords" class="scans-view__list">
-      <v-card
-        v-for="record in scansStore.records"
-        :key="record.id"
-        class="scans-view__record"
-        border
-        elevation="0"
+    <template v-if="authStore.isSuperAdmin">
+      <v-alert
+        v-if="scansStore.errorMessage"
+        color="error"
+        icon="mdi-alert-circle-outline"
+        variant="tonal"
       >
-        <v-card-item>
-          <template #prepend>
-            <v-avatar class="scans-view__icon" size="44">
-              <v-icon icon="mdi-image-search-outline" />
-            </v-avatar>
-          </template>
-          <v-card-title>{{ record.scanCode }}</v-card-title>
-          <v-card-subtitle>{{ scanRecordStatusLabel(record.status) }}</v-card-subtitle>
-          <template #append>
-            <v-chip class="scans-view__method-chip" size="small">
-              {{ scanInputMethodLabel(record.inputMethod) }}
-            </v-chip>
-          </template>
-        </v-card-item>
+        {{ scansStore.errorMessage }}
+      </v-alert>
 
-        <v-card-text class="scans-view__content">
-          <button
-            v-if="record.imagePreviewDataUrl"
-            class="scans-view__thumb"
-            type="button"
-            @click="openLightbox(record)"
-          >
-            <img :src="record.imagePreviewDataUrl" alt="Stored source image preview" />
-          </button>
+      <v-alert
+        v-if="scansStore.successMessage"
+        class="scans-view__success-alert"
+        icon="mdi-check-circle-outline"
+        variant="tonal"
+      >
+        {{ scansStore.successMessage }}
+      </v-alert>
 
-          <div class="scans-view__meta-grid">
-            <div>
-              <span>Scanned</span>
-              <strong>{{ formatDisplayDateTime(record.scannedAt) }}</strong>
-            </div>
-            <div>
-              <span>Original file</span>
-              <strong>{{ record.originalFileName || 'Not available' }}</strong>
-            </div>
-            <div>
-              <span>Detected items</span>
-              <strong>{{ record.itemCount }}</strong>
-            </div>
-            <div>
-              <span>Saved items</span>
-              <strong>{{ record.savedItemCount }}</strong>
-            </div>
-            <div>
-              <span>OCR confidence</span>
-              <strong>{{ formatConfidence(record.ocrConfidence) }}</strong>
-            </div>
-          </div>
+      <div v-show="scansStore.isLoading" class="scans-view__loading">
+        <v-progress-circular color="accent" indeterminate />
+      </div>
 
-          <div class="scans-view__fields">
-            <v-text-field
-              :model-value="getDraft(record.id).alias"
-              label="Alias"
-              variant="outlined"
-              @update:model-value="getDraft(record.id).alias = String($event)"
-            />
-            <v-textarea
-              :model-value="getDraft(record.id).note"
-              auto-grow
-              label="Note"
-              rows="2"
-              variant="outlined"
-              @update:model-value="getDraft(record.id).note = String($event)"
-            />
-          </div>
-        </v-card-text>
+      <div v-if="hasScanRecords" class="scans-view__list">
+        <v-card
+          v-for="record in scansStore.records"
+          :key="record.id"
+          class="scans-view__record"
+          border
+          elevation="0"
+        >
+          <v-card-item>
+            <template #prepend>
+              <v-avatar class="scans-view__icon" size="44">
+                <v-icon icon="mdi-image-search-outline" />
+              </v-avatar>
+            </template>
+            <v-card-title>{{ record.scanCode }}</v-card-title>
+            <v-card-subtitle>{{ scanRecordStatusLabel(record.status) }}</v-card-subtitle>
+            <template #append>
+              <v-chip class="scans-view__method-chip" size="small">
+                {{ scanInputMethodLabel(record.inputMethod) }}
+              </v-chip>
+            </template>
+          </v-card-item>
 
-        <v-card-actions class="scans-view__actions">
-          <app-button icon="mdi-content-save-outline" @click="saveScanDetails(record.id)">
-            Save details
-          </app-button>
-          <app-button
-            icon="mdi-information-outline"
-            tone="ghost"
-            variant="tonal"
-            @click="openScanDetails(record)"
-          >
-            View details
-          </app-button>
-          <app-button
-            v-if="record.imagePreviewDataUrl"
-            icon="mdi-magnify-plus-outline"
-            tone="ghost"
-            variant="tonal"
-            @click="openLightbox(record)"
-          >
-            View image
-          </app-button>
-        </v-card-actions>
-      </v-card>
-    </div>
+          <v-card-text class="scans-view__content">
+            <button
+              v-if="record.imagePreviewDataUrl"
+              class="scans-view__thumb"
+              type="button"
+              @click="openLightbox(record)"
+            >
+              <img :src="record.imagePreviewDataUrl" alt="Stored source image preview" />
+            </button>
+
+            <div class="scans-view__meta-grid">
+              <div>
+                <span>Scanned</span>
+                <strong>{{ formatDisplayDateTime(record.scannedAt) }}</strong>
+              </div>
+              <div>
+                <span>Original file</span>
+                <strong>{{ record.originalFileName || 'Not available' }}</strong>
+              </div>
+              <div>
+                <span>Detected items</span>
+                <strong>{{ record.itemCount }}</strong>
+              </div>
+              <div>
+                <span>Saved items</span>
+                <strong>{{ record.savedItemCount }}</strong>
+              </div>
+              <div>
+                <span>OCR confidence</span>
+                <strong>{{ formatConfidence(record.ocrConfidence) }}</strong>
+              </div>
+            </div>
+
+            <div class="scans-view__fields">
+              <v-text-field
+                :model-value="getDraft(record.id).alias"
+                label="Alias"
+                variant="outlined"
+                @update:model-value="getDraft(record.id).alias = String($event)"
+              />
+              <v-textarea
+                :model-value="getDraft(record.id).note"
+                auto-grow
+                label="Note"
+                rows="2"
+                variant="outlined"
+                @update:model-value="getDraft(record.id).note = String($event)"
+              />
+            </div>
+          </v-card-text>
+
+          <v-card-actions class="scans-view__actions">
+            <app-button icon="mdi-content-save-outline" @click="saveScanDetails(record.id)">
+              Save details
+            </app-button>
+            <app-button
+              icon="mdi-information-outline"
+              tone="ghost"
+              variant="tonal"
+              @click="openScanDetails(record)"
+            >
+              View details
+            </app-button>
+            <app-button
+              v-if="record.imagePreviewDataUrl"
+              icon="mdi-magnify-plus-outline"
+              tone="ghost"
+              variant="tonal"
+              @click="openLightbox(record)"
+            >
+              View image
+            </app-button>
+          </v-card-actions>
+        </v-card>
+      </div>
+
+      <empty-state
+        v-else-if="!scansStore.isLoading"
+        icon="mdi-history"
+        title="No scans yet"
+        description="Scan a source image to create a traceable scan record."
+        action-label="New scan"
+        action-to="/app/scan"
+      />
+
+      <v-dialog v-model="detailDialogOpen" max-width="920" scrollable>
+        <v-card v-if="selectedRecord" class="scans-view__detail-dialog">
+          <v-card-item>
+            <template #prepend>
+              <v-avatar class="scans-view__icon" size="44">
+                <v-icon icon="mdi-image-search-outline" />
+              </v-avatar>
+            </template>
+            <v-card-title>{{ selectedRecord.alias }}</v-card-title>
+            <v-card-subtitle>{{ selectedRecord.scanCode }}</v-card-subtitle>
+            <template #append>
+              <v-btn
+                aria-label="Close scan details"
+                icon="mdi-close"
+                variant="text"
+                @click="detailDialogOpen = false"
+              />
+            </template>
+          </v-card-item>
+
+          <v-card-text class="scans-view__detail-content">
+            <button
+              v-if="selectedRecord.imagePreviewDataUrl"
+              class="scans-view__detail-preview"
+              type="button"
+              @click="lightboxOpen = true"
+            >
+              <img :src="selectedRecord.imagePreviewDataUrl" alt="Stored source image preview" />
+            </button>
+            <v-alert v-else icon="mdi-image-off-outline" variant="tonal">
+              Image preview is not available for this scan.
+            </v-alert>
+
+            <div class="scans-view__meta-grid">
+              <div v-for="item in selectedRecordMetaItems" :key="`${item.label}-${item.value}`">
+                <span>{{ item.label }}</span>
+                <strong>{{ item.value }}</strong>
+              </div>
+            </div>
+          </v-card-text>
+
+          <v-card-actions class="scans-view__actions">
+            <app-button
+              v-if="selectedRecord.imagePreviewDataUrl"
+              icon="mdi-magnify-plus-outline"
+              @click="lightboxOpen = true"
+            >
+              Open image
+            </app-button>
+            <app-button tone="ghost" variant="tonal" @click="detailDialogOpen = false">
+              Close
+            </app-button>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
+
+      <source-image-lightbox
+        v-model="lightboxOpen"
+        :image-url="selectedRecord?.imagePreviewDataUrl"
+        :meta-items="selectedRecordMetaItems"
+        :subtitle="selectedRecord?.scanCode"
+        :title="selectedRecord?.alias"
+      />
+    </template>
 
     <empty-state
-      v-else-if="!scansStore.isLoading"
-      icon="mdi-history"
-      title="No scans yet"
-      description="Scan a source image to create a traceable scan record."
-      action-label="New scan"
+      v-else
+      icon="mdi-shield-check-outline"
+      title="Scan records are managed automatically"
+      description="Your inventory keeps scan connections in the background while regular screens stay focused on items, expiration dates, and recipes."
+      action-label="Scan items"
       action-to="/app/scan"
-    />
-
-    <v-dialog v-model="detailDialogOpen" max-width="920" scrollable>
-      <v-card v-if="selectedRecord" class="scans-view__detail-dialog">
-        <v-card-item>
-          <template #prepend>
-            <v-avatar class="scans-view__icon" size="44">
-              <v-icon icon="mdi-image-search-outline" />
-            </v-avatar>
-          </template>
-          <v-card-title>{{ selectedRecord.alias }}</v-card-title>
-          <v-card-subtitle>{{ selectedRecord.scanCode }}</v-card-subtitle>
-          <template #append>
-            <v-btn
-              aria-label="Close scan details"
-              icon="mdi-close"
-              variant="text"
-              @click="detailDialogOpen = false"
-            />
-          </template>
-        </v-card-item>
-
-        <v-card-text class="scans-view__detail-content">
-          <button
-            v-if="selectedRecord.imagePreviewDataUrl"
-            class="scans-view__detail-preview"
-            type="button"
-            @click="lightboxOpen = true"
-          >
-            <img :src="selectedRecord.imagePreviewDataUrl" alt="Stored source image preview" />
-          </button>
-          <v-alert v-else icon="mdi-image-off-outline" variant="tonal">
-            Image preview is not available for this scan.
-          </v-alert>
-
-          <div class="scans-view__meta-grid">
-            <div v-for="item in selectedRecordMetaItems" :key="`${item.label}-${item.value}`">
-              <span>{{ item.label }}</span>
-              <strong>{{ item.value }}</strong>
-            </div>
-          </div>
-        </v-card-text>
-
-        <v-card-actions class="scans-view__actions">
-          <app-button
-            v-if="selectedRecord.imagePreviewDataUrl"
-            icon="mdi-magnify-plus-outline"
-            @click="lightboxOpen = true"
-          >
-            Open image
-          </app-button>
-          <app-button tone="ghost" variant="tonal" @click="detailDialogOpen = false">
-            Close
-          </app-button>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <source-image-lightbox
-      v-model="lightboxOpen"
-      :image-url="selectedRecord?.imagePreviewDataUrl"
-      :meta-items="selectedRecordMetaItems"
-      :subtitle="selectedRecord?.scanCode"
-      :title="selectedRecord?.alias"
     />
   </section>
 </template>

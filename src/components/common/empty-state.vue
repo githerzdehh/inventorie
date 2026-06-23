@@ -9,6 +9,10 @@ defineProps<{
   actionLabel?: string
   actionTo?: string
 }>()
+
+const emit = defineEmits<{
+  action: []
+}>()
 </script>
 
 <template>
@@ -19,6 +23,9 @@ defineProps<{
     <h2>{{ title }}</h2>
     <p>{{ description }}</p>
     <app-button v-if="actionLabel && actionTo" :to="actionTo" icon="mdi-arrow-right">
+      {{ actionLabel }}
+    </app-button>
+    <app-button v-else-if="actionLabel" icon="mdi-plus-circle-outline" @click="emit('action')">
       {{ actionLabel }}
     </app-button>
   </app-card>

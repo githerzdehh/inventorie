@@ -90,16 +90,72 @@ export const mockUsers: StoredAuthUser[] = [
     updatedAt: seededAt,
   },
   {
-    id: 'subscriber',
-    username: 'user',
-    firstName: 'Inventorie',
-    lastName: 'User',
-    displayName: 'Inventorie User',
-    email: 'user@inventorie.local',
-    phoneNumber: null,
-    password: 'user123',
+    id: 'subscriber-diane',
+    username: 'diane',
+    firstName: 'Diane',
+    lastName: 'Santos',
+    displayName: 'Diane Santos',
+    email: 'diane@inventorie.local',
+    phoneNumber: '+639171110001',
+    password: 'diane123',
     role: 'subscriber',
     isSubscribed: true,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  },
+  {
+    id: 'subscriber-jasmine',
+    username: 'jasmine',
+    firstName: 'Jasmine',
+    lastName: 'Reyes',
+    displayName: 'Jasmine Reyes',
+    email: 'jasmine@inventorie.local',
+    phoneNumber: '+639171110002',
+    password: 'jasmine123',
+    role: 'subscriber',
+    isSubscribed: true,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  },
+  {
+    id: 'subscriber-miguel',
+    username: 'miguel',
+    firstName: 'Miguel',
+    lastName: 'Cruz',
+    displayName: 'Miguel Cruz',
+    email: 'miguel@inventorie.local',
+    phoneNumber: '+639171110003',
+    password: 'miguel123',
+    role: 'subscriber',
+    isSubscribed: false,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  },
+  {
+    id: 'subscriber-aria',
+    username: 'aria',
+    firstName: 'Aria',
+    lastName: 'Lim',
+    displayName: 'Aria Lim',
+    email: 'aria@inventorie.local',
+    phoneNumber: '+639171110004',
+    password: 'aria123',
+    role: 'subscriber',
+    isSubscribed: true,
+    createdAt: seededAt,
+    updatedAt: seededAt,
+  },
+  {
+    id: 'subscriber-noah',
+    username: 'noah',
+    firstName: 'Noah',
+    lastName: 'Garcia',
+    displayName: 'Noah Garcia',
+    email: 'noah@inventorie.local',
+    phoneNumber: '+639171110005',
+    password: 'noah123',
+    role: 'subscriber',
+    isSubscribed: false,
     createdAt: seededAt,
     updatedAt: seededAt,
   },
@@ -215,12 +271,22 @@ function readStoredUsers(): StoredAuthUser[] {
       return [...mockUsers]
     }
 
-    return [...parsedUsers]
+    const mergedUsers = mergeSeededUsers(parsedUsers)
+    writeStoredUsers(mergedUsers)
+
+    return mergedUsers
   } catch {
     window.localStorage.removeItem(usersStorageKey)
     writeStoredUsers(mockUsers)
     return [...mockUsers]
   }
+}
+
+function mergeSeededUsers(users: StoredAuthUser[]): StoredAuthUser[] {
+  const existingIds = new Set(users.map((user) => user.id))
+  const missingSeedUsers = mockUsers.filter((user) => !existingIds.has(user.id))
+
+  return missingSeedUsers.length ? [...users, ...missingSeedUsers] : [...users]
 }
 
 function writeStoredUsers(users: StoredAuthUser[]): void {
@@ -390,8 +456,7 @@ export const useAuthStore = defineStore('auth', {
     isSuperAdmin: (state) => state.currentUser?.role === 'super_admin',
     isAdmin: (state) =>
       state.currentUser?.role === 'admin' || state.currentUser?.role === 'super_admin',
-    canManageUsers: (state) =>
-      state.currentUser?.role === 'admin' || state.currentUser?.role === 'super_admin',
+    canManageUsers: (state) => state.currentUser?.role === 'super_admin',
     canRegister: (state) => state.config.allowRegistration,
     allowedPhoneCountryLabel: (state) => getPhoneCountryLabel(state.config.allowedPhoneCountry),
     isSubscribed: (state) => Boolean(state.currentUser?.isSubscribed),
@@ -399,10 +464,6 @@ export const useAuthStore = defineStore('auth', {
     assignableRoles: (state): UserRole[] => {
       if (state.currentUser?.role === 'super_admin') {
         return ['super_admin', 'admin', 'subscriber']
-      }
-
-      if (state.currentUser?.role === 'admin') {
-        return ['admin', 'subscriber']
       }
 
       return []
@@ -458,7 +519,7 @@ export const useAuthStore = defineStore('auth', {
         return true
       }
 
-      return this.currentUser?.role === 'admin' && targetUser.role !== 'super_admin'
+      return false
     },
     setRegistrationEnabled(enabled: boolean): boolean {
       if (!this.isSuperAdmin) {
@@ -632,6 +693,35 @@ export const useAuthStore = defineStore('auth', {
 
       this.errorMessage = null
       this.successMessage = 'Account deletion request submitted.'
+
+      return true
+    },
+    deleteCurrentAccount(feedback = ''): boolean {
+      if (!this.currentUser) {
+        this.errorMessage = 'You must be signed in to delete your account.'
+        this.successMessage = null
+        return false
+      }
+
+      if (this.currentUser.role === 'super_admin') {
+        this.errorMessage = 'Super Admin account deletion is blocked.'
+        this.successMessage = null
+        return false
+      }
+
+      if (feedback.trim().length > 2000) {
+        this.errorMessage = 'Account deletion feedback must be 2,000 characters or fewer.'
+        this.successMessage = null
+        return false
+      }
+
+      const deletedUserId = this.currentUser.id
+      this.users = this.users.filter((storedUser) => storedUser.id !== deletedUserId)
+      this.currentUser = null
+      writeStoredUsers(this.users)
+      writeStoredSession(null)
+      this.errorMessage = null
+      this.successMessage = 'Account deleted.'
 
       return true
     },

@@ -1,130 +1,145 @@
 <script setup lang="ts">
 import AppButton from '@/components/common/app-button.vue'
-import EmptyState from '@/components/common/empty-state.vue'
-import { formatDisplayDateTime } from '@/composables/date-utils'
 import { type NotificationType, useNotificationsStore } from '@/stores/notifications'
 
 const notificationsStore = useNotificationsStore()
 
-const notificationTypeLabels: Record<NotificationType, string> = {
-  pantry: 'Pantry',
-  recipe: 'Recipe',
-  system: 'System',
+const notificationIcons: Record<NotificationType, string> = {
+  pantry: 'mdi-alert-circle',
+  recipe: 'mdi-food-variant',
+  comparison: 'mdi-handshake-outline',
+  system: 'mdi-cog',
+}
+
+function relativeTime(createdAt: string): string {
+  const created = new Date(createdAt).getTime()
+  const today = new Date('2026-06-23T08:00:00.000Z').getTime()
+  const hours = Math.max(0, Math.round((today - created) / 3_600_000))
+
+  if (hours < 1) {
+    return 'Just now'
+  }
+
+  if (hours < 24) {
+    return `${hours} hours ago`
+  }
+
+  const days = Math.round(hours / 24)
+
+  return days === 1 ? 'Yesterday' : `${days} days ago`
 }
 </script>
 
 <template>
-  <section class="notifications-view app-page app-stack">
-    <div class="notifications-view__header">
-      <div class="app-page-heading">
-        <h2>Activity</h2>
-        <p>Review updates, shared inventory activity, and app alerts.</p>
-      </div>
+  <section class="notifications-view app-page app-mobile-shell">
+    <header class="mock-brand-header">
+      <h1>INVENTORIÉ</h1>
+      <h2>NOTIFICATIONS</h2>
+    </header>
 
-      <div class="notifications-view__actions">
-        <v-chip aria-label="Unread notifications" color="primary" variant="tonal">
-          {{ notificationsStore.unreadCount }} unread
-        </v-chip>
-        <app-button
-          v-if="notificationsStore.unreadCount > 0"
-          icon="mdi-check-all"
-          variant="tonal"
-          @click="notificationsStore.markAllAsRead"
-        >
-          Mark all as read
-        </app-button>
-      </div>
+    <div class="notifications-view__actions">
+      <v-chip color="primary" variant="tonal">{{ notificationsStore.unreadCount }} unread</v-chip>
+      <app-button
+        v-if="notificationsStore.unreadCount"
+        icon="mdi-check-all"
+        size="small"
+        variant="tonal"
+        @click="notificationsStore.markAllAsRead"
+      >
+        Mark read
+      </app-button>
     </div>
 
-    <empty-state
-      v-if="notificationsStore.allNotifications.length === 0"
-      icon="mdi-bell-outline"
-      title="No notifications yet"
-      description="Updates about pantry activity, recipes, and app alerts will appear here."
-    />
-
-    <div v-else class="notifications-view__list">
-      <v-card
+    <div class="notifications-view__list">
+      <article
         v-for="notification in notificationsStore.allNotifications"
         :key="notification.id"
         class="notifications-view__card"
         :class="{ 'notifications-view__card--unread': !notification.read }"
-        border
-        elevation="0"
+        @click="notificationsStore.markAsRead(notification.id)"
       >
-        <v-card-item>
-          <template #prepend>
-            <v-avatar class="notifications-view__icon" size="44">
-              <v-icon icon="mdi-bell-outline" />
-            </v-avatar>
-          </template>
-
-          <v-card-title>{{ notification.title }}</v-card-title>
-          <v-card-subtitle>{{ formatDisplayDateTime(notification.createdAt) }}</v-card-subtitle>
-
-          <template #append>
-            <div class="notifications-view__chips">
-              <v-chip v-if="!notification.read" color="primary" size="small" variant="tonal">
-                Unread
-              </v-chip>
-              <v-chip size="small" variant="tonal">
-                {{ notificationTypeLabels[notification.type] }}
-              </v-chip>
-            </div>
-          </template>
-        </v-card-item>
-
-        <v-card-text>
+        <v-icon class="notifications-view__icon" :icon="notificationIcons[notification.type]" />
+        <div>
+          <h3>{{ notification.title }}</h3>
           <p>{{ notification.description }}</p>
-        </v-card-text>
-      </v-card>
+          <small>{{ relativeTime(notification.createdAt) }}</small>
+        </div>
+      </article>
     </div>
+
+    <app-button icon="mdi-arrow-left" tone="ghost" to="/app/settings" variant="tonal">
+      Back to settings
+    </app-button>
   </section>
 </template>
 
 <style scoped>
-.notifications-view__header,
-.notifications-view__actions,
-.notifications-view__chips {
+.notifications-view {
+  display: grid;
+  gap: var(--space-4);
+  padding-bottom: var(--space-10);
+}
+
+.notifications-view__actions {
   display: flex;
   gap: var(--space-3);
-}
-
-.notifications-view__header {
-  align-items: flex-start;
-  justify-content: space-between;
-}
-
-.notifications-view__actions,
-.notifications-view__chips {
   align-items: center;
-  flex-wrap: wrap;
+  padding-inline: var(--space-4);
 }
 
 .notifications-view__list {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
 .notifications-view__card {
-  border-color: var(--color-border);
-  border-radius: var(--radius-md);
+  display: grid;
+  grid-template-columns: 5rem minmax(0, 1fr);
+  gap: var(--space-3);
+  align-items: center;
+  min-height: 7rem;
+  padding: var(--space-4);
+  color: var(--color-text);
   background: var(--color-surface);
+  border: 0;
+  border-radius: var(--radius-lg);
+  cursor: pointer;
 }
 
 .notifications-view__card--unread {
-  border-color: color-mix(in srgb, var(--color-primary) 36%, var(--color-border));
-  background: linear-gradient(90deg, var(--color-primary-soft), var(--color-surface) 34%);
+  box-shadow: inset 0 0 0 3px color-mix(in srgb, var(--color-primary) 22%, transparent);
 }
 
 .notifications-view__icon {
-  color: var(--color-primary);
-  background: var(--color-primary-soft);
+  color: #2e9230;
+  font-size: 4.2rem;
 }
 
-@media (max-width: 640px) {
-  .notifications-view__header {
-    display: grid;
-  }
+.notifications-view__card:first-child .notifications-view__icon {
+  color: #ff2a34;
+}
+
+.notifications-view h3,
+.notifications-view p {
+  margin: 0;
+}
+
+.notifications-view h3 {
+  font-size: 1.2rem;
+  line-height: 1.15;
+}
+
+.notifications-view p {
+  font-size: 1.05rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+}
+
+.notifications-view small {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--color-text);
+  font-style: italic;
+  text-align: right;
 }
 </style>

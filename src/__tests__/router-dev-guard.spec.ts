@@ -19,7 +19,7 @@ describe('router dev guard', () => {
         canManageUsers: true,
         isSuperAdmin: false,
       }),
-    ).toBe('/app/scan')
+    ).toBe('/app/home')
   })
 
   it('allows super admin users to access the hidden reset page', () => {
@@ -31,5 +31,27 @@ describe('router dev guard', () => {
         isSuperAdmin: true,
       }),
     ).toBe(true)
+  })
+
+  it('redirects non-super-admin users away from user management', () => {
+    expect(
+      resolveInventorieRouteAccess(makeRoute('/app/users'), {
+        isProcessing: false,
+        isAuthenticated: true,
+        canManageUsers: false,
+        isSuperAdmin: false,
+      }),
+    ).toBe('/app/home')
+  })
+
+  it('redirects signed-in users away from login to home', () => {
+    expect(
+      resolveInventorieRouteAccess(makeRoute('/login', 'login'), {
+        isProcessing: false,
+        isAuthenticated: true,
+        canManageUsers: false,
+        isSuperAdmin: false,
+      }),
+    ).toBe('/app/home')
   })
 })

@@ -59,7 +59,7 @@ describe('scanner super admin UI', () => {
   })
 
   it('hides sample receipt controls and diagnostics for subscribed users', async () => {
-    await renderScanReceiptView('user@inventorie.local', 'user123')
+    await renderScanReceiptView('diane@inventorie.local', 'diane123')
 
     expect(screen.queryByText('Use Sample Scan')).not.toBeInTheDocument()
     expect(screen.queryByText('Scanner diagnostics')).not.toBeInTheDocument()

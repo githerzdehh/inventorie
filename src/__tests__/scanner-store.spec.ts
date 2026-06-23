@@ -58,6 +58,23 @@ describe('scanner store', () => {
     expect(scannerStore.ocrStep).toBe('recognize-text')
   })
 
+  it('adds review items with ingredient and storage defaults', () => {
+    const scannerStore = useScannerStore()
+
+    const item = scannerStore.addDetectedItem({
+      displayName: 'Milk',
+      quantity: 1,
+      unit: 'liter',
+    })
+
+    expect(item).toMatchObject({
+      ingredientId: 'ingredient-milk',
+      storageLocation: 'refrigerator',
+      selected: true,
+    })
+    expect(item.estimatedUseByDate).toEqual(expect.any(String))
+  })
+
   it('loads the sample scan without running OCR', async () => {
     const scannerStore = useScannerStore()
 

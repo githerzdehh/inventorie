@@ -9,7 +9,16 @@ describe('auth store', () => {
   })
 
   it('defines one user for each supported role', () => {
-    expect(mockUsers.map((user) => user.role)).toEqual(['super_admin', 'admin', 'subscriber'])
+    expect(mockUsers.map((user) => user.role)).toEqual([
+      'super_admin',
+      'admin',
+      'subscriber',
+      'subscriber',
+      'subscriber',
+      'subscriber',
+      'subscriber',
+    ])
+    expect(mockUsers.filter((user) => user.role === 'subscriber')).toHaveLength(5)
   })
 
   it('logs in the super admin user and persists the session', () => {
@@ -38,14 +47,14 @@ describe('auth store', () => {
     expect(authStore.isAuthenticated).toBe(true)
     expect(authStore.isAdmin).toBe(true)
     expect(authStore.isSuperAdmin).toBe(false)
-    expect(authStore.canManageUsers).toBe(true)
+    expect(authStore.canManageUsers).toBe(false)
     expect(authStore.roleLabel).toBe('Admin')
   })
 
   it('logs in the subscribed user without admin access', () => {
     const authStore = useAuthStore()
 
-    expect(authStore.login('user', 'user123')).toBe(true)
+    expect(authStore.login('diane', 'diane123')).toBe(true)
     expect(authStore.isAuthenticated).toBe(true)
     expect(authStore.isAdmin).toBe(false)
     expect(authStore.isSuperAdmin).toBe(false)
@@ -137,15 +146,13 @@ describe('auth store', () => {
     expect(authStore.users.find((user) => user.id === 'super-admin')).toBeTruthy()
   })
 
-  it('allows admins to manage non-super-admin users', () => {
+  it('prevents admins from managing the mock user database', () => {
     const authStore = useAuthStore()
 
     authStore.login('admin', 'admin123')
 
-    expect(authStore.updateUser('subscriber', { firstName: 'Updated' })).toBe(true)
-    expect(authStore.users.find((user) => user.id === 'subscriber')?.displayName).toBe(
-      'Updated User',
-    )
+    expect(authStore.updateUser('subscriber-diane', { firstName: 'Updated' })).toBe(false)
+    expect(authStore.errorMessage).toBe('You do not have permission to manage this user.')
   })
 
   it('allows super admin to manage all user roles', () => {
@@ -163,15 +170,34 @@ describe('auth store', () => {
     expect(authStore.requestAccountDeletion('No longer needed')).toBe(false)
     expect(authStore.errorMessage).toBe('You must be signed in to request account deletion.')
 
-    expect(authStore.login('user', 'user123')).toBe(true)
+    expect(authStore.login('diane', 'diane123')).toBe(true)
     expect(authStore.requestAccountDeletion('No longer needed')).toBe(true)
     expect(authStore.successMessage).toBe('Account deletion request submitted.')
+  })
+
+  it('deletes the active non-super-admin mock account and clears the session', () => {
+    const authStore = useAuthStore()
+
+    expect(authStore.login('diane', 'diane123')).toBe(true)
+    expect(authStore.deleteCurrentAccount('No longer needed')).toBe(true)
+    expect(authStore.isAuthenticated).toBe(false)
+    expect(authStore.users.some((user) => user.id === 'subscriber-diane')).toBe(false)
+    expect(window.localStorage.getItem('inventorie:auth-session')).toBeNull()
+  })
+
+  it('blocks active super admin account deletion', () => {
+    const authStore = useAuthStore()
+
+    expect(authStore.login('superadmin', 'super123')).toBe(true)
+    expect(authStore.deleteCurrentAccount('No longer needed')).toBe(false)
+    expect(authStore.errorMessage).toBe('Super Admin account deletion is blocked.')
+    expect(authStore.isAuthenticated).toBe(true)
   })
 
   it('rejects invalid credentials and clears the session', () => {
     const authStore = useAuthStore()
 
-    expect(authStore.login('user@inventorie.local', 'wrong')).toBe(false)
+    expect(authStore.login('diane@inventorie.local', 'wrong')).toBe(false)
     expect(authStore.isAuthenticated).toBe(false)
     expect(authStore.errorMessage).toBe('Invalid username, email, or password.')
     expect(window.localStorage.getItem('inventorie:auth-session')).toBeNull()
@@ -180,7 +206,7 @@ describe('auth store', () => {
   it('logs out and clears the stored session', () => {
     const authStore = useAuthStore()
 
-    authStore.login('user@inventorie.local', 'user123')
+    authStore.login('diane@inventorie.local', 'diane123')
     authStore.logout()
 
     expect(authStore.isAuthenticated).toBe(false)

@@ -1,9 +1,14 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import AppButton from '@/components/common/app-button.vue'
+import { resetInventorieTestData } from '@/composables/useInventorieTestDataReset'
+import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
+const appStore = useAppStore()
+const router = useRouter()
 const isOpen = ref(false)
 const feedback = ref('')
 const hasConfirmedIntent = ref(false)
@@ -27,10 +32,13 @@ async function submitDeletionRequest() {
   isSubmitting.value = true
 
   try {
-    const wasRequested = await authStore.requestAccountDeletion(feedback.value)
+    const wasDeleted = authStore.deleteCurrentAccount(feedback.value)
 
-    if (wasRequested) {
+    if (wasDeleted) {
+      await resetInventorieTestData()
+      appStore.resetPreferences()
       closeDialog()
+      await router.push('/login')
     }
   } finally {
     isSubmitting.value = false
@@ -66,27 +74,32 @@ watch(isOpen, (open) => {
         <p class="delete-account-dialog__eyebrow">DELETE ACCOUNT INFO</p>
 
         <div class="delete-account-dialog__sections">
+          <v-alert
+            v-if="authStore.errorMessage"
+            color="error"
+            icon="mdi-alert-circle-outline"
+            variant="tonal"
+          >
+            {{ authStore.errorMessage }}
+          </v-alert>
+
           <section class="delete-account-dialog__section">
             <h3>⚠️ Permanent Action</h3>
             <p>
-              Deleting your account is permanent after the request is processed. Your profile,
-              preferences, and access to INVENTORIÉ will be removed.
+              Deleting your account will permanently erase your local profile details, settings,
+              pantry data, and saved preferences from this browser.
             </p>
           </section>
 
           <section class="delete-account-dialog__section">
             <h3>💳 Plan Cancellation</h3>
-            <p>
-              Any active plan or subscription will be queued for cancellation according to your
-              current billing terms.
-            </p>
+            <p>Any selected app plan tied to this browser profile will be reset immediately.</p>
           </section>
 
           <section class="delete-account-dialog__section">
             <h3>🔄 Data Deactivation</h3>
             <p>
-              Your saved inventory, receipt scans, and account data will be deactivated while the
-              deletion request is reviewed.
+              Your saved inventory, scan records, and support submissions will be cleared locally.
             </p>
           </section>
 
@@ -110,7 +123,7 @@ watch(isOpen, (open) => {
           class="delete-account-dialog__confirmation"
           color="error"
           hide-details
-          label="I confirm that I want to request permanent account deletion."
+          label="I confirm that I want to permanently delete this account."
         />
 
         <div class="delete-account-dialog__actions">

@@ -78,6 +78,8 @@ test('scan, preview, history, and lightbox clicks do not reload the page', async
   await page.getByLabel('Username or email').fill('superadmin')
   await page.getByLabel('Password').fill('super123')
   await page.getByRole('button', { name: 'Sign in' }).click()
+  await expect(page).toHaveURL(/\/app\/home$/)
+  await page.goto('/app/scan')
   await expect(page).toHaveURL(/\/app\/scan$/)
   await page.waitForLoadState('networkidle')
   await resetReloadAudit(page)

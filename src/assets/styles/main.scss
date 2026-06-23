@@ -1,24 +1,24 @@
 :root {
   --color-primary: #020bdf;
   --color-primary-dark: #01068f;
-  --color-primary-soft: #ffeeab;
-  --color-secondary: #f9aa11;
-  --color-secondary-soft: #fff4d6;
+  --color-primary-soft: #dfe5ff;
+  --color-secondary: #ffa80a;
+  --color-secondary-soft: #ffe15a;
   --color-accent: #f18e06;
   --color-accent-dark: #b56400;
   --color-accent-soft: #ffe7bf;
   --color-success: #020bdf;
-  --color-success-soft: #ffeeab;
+  --color-success-soft: #dff6dd;
   --color-warning: #f9aa11;
   --color-warning-soft: #fff4d6;
-  --color-danger: #f18e06;
-  --color-danger-soft: #ffe7bf;
-  --color-bg: #fffaf0;
-  --color-surface: #ffffff;
-  --color-surface-soft: #ffeeab;
+  --color-danger: #cf121b;
+  --color-danger-soft: #fff0e0;
+  --color-bg: #fff0b1;
+  --color-surface: #fffdf3;
+  --color-surface-soft: #ffde58;
   --color-text: #111111;
-  --color-muted: #4f4f4f;
-  --color-border: #f9aa11;
+  --color-muted: #575757;
+  --color-border: #020bdf;
   --color-disabled: #b8b8b8;
   --color-overlay: rgba(17, 17, 17, 0.42);
   --color-terminal-bg: #ffeeab;
@@ -34,9 +34,9 @@
   --font-weight-bold: 750;
   --radius-xs: 3px;
   --radius-sm: 6px;
-  --radius-md: 12px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
   --radius-pill: 999px;
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -51,8 +51,8 @@
   --shadow-panel: 0 18px 46px rgba(17, 17, 17, 0.11);
   --transition-fast: 140ms ease;
   --transition-base: 180ms ease;
-  --app-max-width: 960px;
-  --bottom-navigation-height: 72px;
+  --app-max-width: 430px;
+  --bottom-navigation-height: 76px;
   --safe-area-top: env(safe-area-inset-top, 0px);
   --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --focus-ring: 0 0 0 3px rgba(2, 11, 223, 0.24);
@@ -167,7 +167,7 @@ p {
 .v-alert,
 .v-card,
 .v-list {
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
 }
 
 .v-field {
@@ -186,6 +186,11 @@ p {
   width: 100%;
   max-width: var(--app-max-width);
   margin-inline: auto;
+}
+
+.app-mobile-shell {
+  min-height: 100vh;
+  background: var(--color-bg);
 }
 
 .app-stack {
@@ -246,6 +251,66 @@ p {
 
 .bottom-nav-spacer {
   padding-bottom: calc(var(--bottom-navigation-height) + var(--safe-area-bottom) + var(--space-6));
+}
+
+.mock-hero {
+  display: grid;
+  min-height: 7.25rem;
+  place-items: center;
+  padding: calc(var(--space-4) + var(--safe-area-top)) var(--space-4) var(--space-5);
+  background: var(--color-secondary-soft);
+  border-radius: 0 0 34px 34px;
+}
+
+.mock-hero h1,
+.mock-brand-header h1,
+.mock-brand-header h2 {
+  margin: 0;
+  color: var(--color-primary);
+  font-family: var(--font-family-title);
+  font-size: clamp(2rem, 10vw, 3.4rem);
+  font-weight: var(--font-weight-bold);
+  line-height: 0.95;
+  text-align: center;
+  text-shadow:
+    0.12em 0.12em 0 rgba(248, 166, 13, 0.8),
+    0.22em 0.02em 0 rgba(248, 166, 13, 0.55);
+}
+
+.mock-brand-header {
+  display: grid;
+  gap: 0;
+  padding-top: calc(var(--space-8) + var(--safe-area-top));
+}
+
+.mock-brand-header h2 {
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-surface);
+  background: var(--color-primary);
+  font-family: var(--font-family-base);
+  font-size: 1.45rem;
+  text-shadow: none;
+}
+
+.mock-panel {
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: color-mix(in srgb, var(--color-surface) 88%, white);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-panel);
+}
+
+.mock-panel h2 {
+  justify-self: center;
+  margin: calc(var(--space-3) * -1) calc(var(--space-3) * -1) 0;
+  padding: var(--space-2) var(--space-4);
+  color: var(--color-primary-dark);
+  background: color-mix(in srgb, var(--color-secondary-soft) 72%, white);
+  border-radius: var(--radius-md);
+  font-size: 1.2rem;
+  line-height: 1;
+  text-align: center;
 }
 
 @media (hover: hover) and (pointer: fine) {

@@ -19,6 +19,7 @@ import {
 } from '@/composables/quantity-utils'
 import { scanInputMethodLabel } from '@/composables/scan-record-utils'
 import { mockStorageRules } from '@/mocks/data/mock-storage-rules'
+import { useAuthStore } from '@/stores/auth'
 import { storageLocationLabels, usePantryStore } from '@/stores/pantry'
 import { useScansStore } from '@/stores/scans'
 
@@ -33,6 +34,7 @@ interface PantryItemForm {
 
 const route = useRoute()
 const router = useRouter()
+const authStore = useAuthStore()
 const pantryStore = usePantryStore()
 const scansStore = useScansStore()
 const isSaving = ref(false)
@@ -298,9 +300,9 @@ watch(pantryItem, syncForm)
           variant="outlined"
         />
 
-        <v-divider />
+        <v-divider v-if="authStore.isSuperAdmin" />
 
-        <div class="pantry-item-view__detail-section">
+        <div v-if="authStore.isSuperAdmin" class="pantry-item-view__detail-section">
           <div class="pantry-item-view__section-heading">
             <h3>Scan details</h3>
             <app-button

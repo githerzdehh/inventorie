@@ -9,9 +9,21 @@ import type {
   StorageLocation,
 } from '@/composables/app-types'
 import { calculateUseByDate, getFreshnessStatus } from '@/composables/date-utils'
+import { resolveIngredientId } from '@/composables/ingredient-utils'
 import { validateQuantityInput } from '@/composables/quantity-utils'
 import { usePantryStorage } from '@/composables/usePantryStorage'
 import { mockStorageRules } from '@/mocks/data/mock-storage-rules'
+
+export interface PantryItemInput {
+  ingredientId?: string | null
+  displayName: string
+  description?: string | null
+  quantity: number | string
+  unit: string
+  purchaseDate?: string | null
+  storageLocation?: StorageLocation | null
+  estimatedUseByDate?: string | null
+}
 
 interface PantryState {
   items: PantryItem[]
@@ -67,26 +79,38 @@ function makePantryItemId(index: number): string {
   return `pantry-${Date.now()}-${index}`
 }
 
-function toPantryItem(
-  item: DetectedReceiptItem,
+function makePantryItemFromInput(
+  input: PantryItemInput,
   index: number,
   createdAt: string,
+  source: PantryItemSource,
   scanRecord?: ScanRecord | null,
+  rawScanLabel?: string | null,
 ): PantryItem {
-  const storageRule = getStorageRule(item.ingredientId)
-  const estimatedUseByDate = calculateUseByDate(createdAt, storageRule?.suggestedDays)
-  const quantityResult = validateQuantityInput(item.quantity, item.unit)
+  const displayName = normalizeString(input.displayName, 'Unnamed item')
+  const ingredientId = resolveIngredientId(input.ingredientId, displayName)
+  const storageRule = getStorageRule(ingredientId)
+  const quantityResult = validateQuantityInput(input.quantity, input.unit)
+
+  if (quantityResult.errorMessage || !quantityResult.quantity) {
+    throw new Error(quantityResult.errorMessage ?? 'Quantity is invalid.')
+  }
+
+  const purchaseDate = input.purchaseDate ?? scanRecord?.scannedAt ?? createdAt
+  const estimatedUseByDate =
+    input.estimatedUseByDate ?? calculateUseByDate(purchaseDate, storageRule?.suggestedDays)
+  const storageLocation = input.storageLocation ?? storageRule?.storageLocation ?? 'pantry'
 
   return {
     id: makePantryItemId(index),
-    ingredientId: item.ingredientId,
-    displayName: item.displayName,
-    description: item.description?.trim() || null,
-    quantity: quantityResult.quantity ?? 1,
-    unit: item.unit,
-    source: 'receipt_scan',
-    purchaseDate: scanRecord?.scannedAt ?? createdAt,
-    storageLocation: storageRule?.storageLocation ?? 'pantry',
+    ingredientId,
+    displayName,
+    description: input.description?.trim() || null,
+    quantity: quantityResult.quantity,
+    unit: normalizeString(input.unit, 'item'),
+    source,
+    purchaseDate,
+    storageLocation,
     estimatedUseByDate,
     freshnessStatus: getFreshnessStatus(
       estimatedUseByDate,
@@ -98,10 +122,35 @@ function toPantryItem(
     scannedAt: scanRecord?.scannedAt ?? null,
     scanInputMethod: scanRecord?.inputMethod ?? null,
     originalFileName: scanRecord?.originalFileName ?? null,
-    rawScanLabel: item.rawLabel?.trim() || null,
+    rawScanLabel: rawScanLabel?.trim() || null,
     createdAt,
     updatedAt: createdAt,
   }
+}
+
+function toPantryItem(
+  item: DetectedReceiptItem,
+  index: number,
+  createdAt: string,
+  scanRecord?: ScanRecord | null,
+): PantryItem {
+  return makePantryItemFromInput(
+    {
+      ingredientId: item.ingredientId,
+      displayName: item.displayName,
+      description: item.description,
+      quantity: item.quantity,
+      unit: item.unit,
+      purchaseDate: scanRecord?.scannedAt ?? createdAt,
+      storageLocation: item.storageLocation ?? null,
+      estimatedUseByDate: item.estimatedUseByDate ?? null,
+    },
+    index,
+    createdAt,
+    'receipt_scan',
+    scanRecord,
+    item.rawLabel,
+  )
 }
 
 function normalizeFreshnessStatus(status: unknown): FreshnessStatus {
@@ -306,6 +355,14 @@ export const usePantryStore = defineStore('pantry', {
       await this.addPantryItems(pantryItems)
 
       return pantryItems
+    },
+    async addManualItem(input: PantryItemInput) {
+      const now = new Date().toISOString()
+      const pantryItem = makePantryItemFromInput(input, 0, now, 'manual')
+
+      await this.addPantryItems([pantryItem])
+
+      return pantryItem
     },
     async updatePantryItem(item: PantryItem) {
       const storageRule = getStorageRule(item.ingredientId)

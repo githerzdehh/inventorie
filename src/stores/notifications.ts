@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
+import { mockNotifications } from '@/mocks/data/mock-app'
 
-export type NotificationType = 'pantry' | 'recipe' | 'system'
+export type NotificationType = 'pantry' | 'recipe' | 'comparison' | 'system'
 
 export interface AppNotification {
   id: string
@@ -17,23 +18,14 @@ interface NotificationsState {
 
 const notificationStorageKey = 'inventorie:notifications'
 
-const defaultNotifications: AppNotification[] = [
-  {
-    id: 'pantry-checkup',
-    title: 'Pantry checkup',
-    description: 'Review items that may need attention before your next grocery run.',
-    createdAt: '2026-06-18T09:00:00.000Z',
-    type: 'pantry',
-    read: true,
-  },
-]
+const defaultNotifications: AppNotification[] = mockNotifications
 
 function cloneDefaultNotifications(): AppNotification[] {
   return defaultNotifications.map((notification) => ({ ...notification }))
 }
 
 function isNotificationType(value: unknown): value is NotificationType {
-  return value === 'pantry' || value === 'recipe' || value === 'system'
+  return value === 'pantry' || value === 'recipe' || value === 'comparison' || value === 'system'
 }
 
 function isAppNotification(value: unknown): value is AppNotification {

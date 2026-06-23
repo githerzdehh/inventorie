@@ -145,6 +145,34 @@ describe('pantry store', () => {
     })
   })
 
+  it('adds manual items with matched ingredient and editable expiration fields', async () => {
+    const pantryStore = usePantryStore()
+
+    const pantryItem = await pantryStore.addManualItem({
+      displayName: 'Chicken',
+      description: 'Drumsticks',
+      quantity: 1,
+      unit: 'kg',
+      storageLocation: 'freezer',
+      estimatedUseByDate: '2026-06-30T00:00:00.000Z',
+    })
+
+    expect(pantryStorageMock.addPantryItems).toHaveBeenCalledWith([
+      expect.objectContaining({
+        ingredientId: 'ingredient-chicken',
+        displayName: 'Chicken',
+        description: 'Drumsticks',
+        source: 'manual',
+        storageLocation: 'freezer',
+        estimatedUseByDate: '2026-06-30T00:00:00.000Z',
+      }),
+    ])
+    expect(pantryItem).toMatchObject({
+      ingredientId: 'ingredient-chicken',
+      source: 'manual',
+    })
+  })
+
   it('rejects decimal quantities for item-style units when updating', async () => {
     const pantryStore = usePantryStore()
 

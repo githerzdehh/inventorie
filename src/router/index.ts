@@ -38,8 +38,23 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/app',
     component: () => import('@/layouts/AppLayout.vue'),
-    redirect: '/app/scan',
+    redirect: '/app/home',
     children: [
+      {
+        path: 'home',
+        name: 'home',
+        component: () => import('@/views/app/home/HomeView.vue'),
+      },
+      {
+        path: 'friends/compare',
+        name: 'friend-comparison',
+        component: () => import('@/views/app/home/FriendComparisonView.vue'),
+      },
+      {
+        path: 'profile',
+        name: 'profile',
+        component: () => import('@/views/app/profile/ProfileView.vue'),
+      },
       {
         path: 'scan',
         name: 'scan-receipt',
@@ -86,9 +101,29 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/app/notifications/NotificationsView.vue'),
       },
       {
+        path: 'plan',
+        name: 'plan',
+        component: () => import('@/views/app/plan/PlanView.vue'),
+      },
+      {
+        path: 'support',
+        name: 'support',
+        component: () => import('@/views/app/support/SupportView.vue'),
+      },
+      {
         path: 'settings',
         name: 'settings',
         component: () => import('@/views/app/settings/SettingsView.vue'),
+      },
+      {
+        path: 'settings/terms',
+        name: 'settings-terms',
+        component: () => import('@/views/app/settings/TermsView.vue'),
+      },
+      {
+        path: 'settings/privacy',
+        name: 'settings-privacy',
+        component: () => import('@/views/app/settings/PrivacyView.vue'),
       },
       {
         path: 'settings/language',
@@ -136,16 +171,16 @@ export function resolveInventorieRouteAccess(
     }
   }
 
-  if (to.path.startsWith('/app/users') && !access.canManageUsers) {
-    return '/app/scan'
+  if (to.path.startsWith('/app/users') && !access.isSuperAdmin) {
+    return '/app/home'
   }
 
   if (to.path.startsWith('/app/dev') && !access.isSuperAdmin) {
-    return '/app/scan'
+    return '/app/home'
   }
 
   if ((to.name === 'login' || to.name === 'register') && access.isAuthenticated) {
-    return '/app/scan'
+    return '/app/home'
   }
 
   return true

@@ -36,13 +36,6 @@ function makePantryItem(overrides: Partial<PantryItem> = {}): PantryItem {
   }
 }
 
-function daysFromNow(days: number): string {
-  const date = new Date()
-  date.setDate(date.getDate() + days)
-
-  return date.toISOString()
-}
-
 function renderPantryView() {
   return render(PantryView, {
     global: {
@@ -78,11 +71,11 @@ describe('PantryView', () => {
 
     await waitFor(() => {
       expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
-      expect(screen.getByText('Your pantry is empty')).toBeInTheDocument()
-      expect(screen.getByText('New scan')).toBeInTheDocument()
+      expect(screen.getByText('Nothing further')).toBeInTheDocument()
+      expect(screen.getByText('Add item')).toBeInTheDocument()
     })
 
-    expect(container.querySelectorAll('.pantry-view__group')).toHaveLength(0)
+    expect(container.querySelectorAll('.pantry-item-card')).toHaveLength(0)
   })
 
   it('renders date added and expiration metadata on pantry cards', async () => {
@@ -97,23 +90,23 @@ describe('PantryView', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Milk')).toBeInTheDocument()
-      expect(screen.getByText(/Added/)).toBeInTheDocument()
-      expect(screen.getByText(/Expiration/)).toBeInTheDocument()
+      expect(screen.getAllByText(/Added/).length).toBeGreaterThan(0)
+      expect(screen.getAllByText(/Expiration/).length).toBeGreaterThan(0)
     })
   })
 
-  it('renders normalized groups in order without duplicate key warnings', async () => {
+  it('renders inventory items without duplicate key warnings', async () => {
     pantryStorageMock.getPantryItems.mockResolvedValue([
       makePantryItem({
         id: 'duplicate-id',
         displayName: 'Yogurt',
-        estimatedUseByDate: daysFromNow(1),
+        estimatedUseByDate: '2026-06-24T00:00:00.000Z',
         freshnessStatus: 'use-soon',
       }),
       makePantryItem({
         id: 'duplicate-id',
         displayName: 'Apples',
-        estimatedUseByDate: daysFromNow(10),
+        estimatedUseByDate: '2026-07-03T00:00:00.000Z',
         freshnessStatus: 'fresh',
       }),
       makePantryItem({
@@ -129,16 +122,12 @@ describe('PantryView', () => {
       expect(screen.getByText('Mystery jar')).toBeInTheDocument()
     })
 
-    const groupLabels = Array.from(
-      container.querySelectorAll('.pantry-view__group-heading h3'),
-    ).map((heading) => heading.textContent)
     const warningOutput = vi
       .mocked(console.warn)
       .mock.calls.map((call) => call.map(String).join(' '))
       .join(' ')
 
-    expect(groupLabels).toEqual(['Use Soon', 'Fresh', 'Unknown'])
-    expect(new Set(groupLabels).size).toBe(groupLabels.length)
+    expect(container.querySelectorAll('.pantry-item-card')).toHaveLength(3)
     expect(warningOutput).not.toContain('Duplicate keys')
   })
 })
