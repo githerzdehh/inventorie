@@ -1,144 +1,235 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import AppButton from '@/components/common/app-button.vue'
 import EmptyState from '@/components/common/empty-state.vue'
+import SelectMenuField from '@/components/common/select-menu-field.vue'
 import PantryItemCard from '@/components/pantry/pantry-item-card.vue'
-import PantrySummaryCard from '@/components/pantry/pantry-summary-card.vue'
-import type { FreshnessStatus, PantryItem } from '@/composables/app-types'
-import { usePantryStore } from '@/stores/pantry'
+import type { PantryItem, StorageLocation } from '@/composables/app-types'
+import { ingredientOptions } from '@/composables/ingredient-utils'
+import {
+  getQuantityInputMode,
+  quantityUnitOptions,
+  validateQuantityInput,
+} from '@/composables/quantity-utils'
+import { storageLocationLabels, usePantryStore } from '@/stores/pantry'
 
-interface PantryRenderItem {
-  item: Partial<PantryItem>
-  renderKey: string
-}
-
-interface PantryGroup {
-  key: FreshnessStatus
-  label: string
-  icon: string
-  items: PantryRenderItem[]
+interface ManualItemForm {
+  ingredientId: string | null
+  displayName: string
+  description: string
+  quantity: string
+  unit: string
+  storageLocation: StorageLocation
+  estimatedUseByDate: string
 }
 
 const pantryStore = usePantryStore()
-const groupConfig: Array<Omit<PantryGroup, 'items'>> = [
-  { key: 'expiring-today', label: 'Expiring Today', icon: 'mdi-calendar-alert' },
-  { key: 'use-soon', label: 'Use Soon', icon: 'mdi-clock-outline' },
-  { key: 'fresh', label: 'Fresh', icon: 'mdi-leaf' },
-  { key: 'past-suggested-date', label: 'Past Suggested Date', icon: 'mdi-alert-circle-outline' },
-  { key: 'unknown', label: 'Unknown', icon: 'mdi-help-circle-outline' },
+const route = useRoute()
+const searchQuery = ref('')
+const sortMode = ref('recent')
+const manualDialogOpen = ref(false)
+const isSavingManualItem = ref(false)
+const manualSaveErrorMessage = ref<string | null>(null)
+const showManualSaveSnackbar = ref(false)
+const manualForm = reactive<ManualItemForm>({
+  ingredientId: null,
+  displayName: '',
+  description: '',
+  quantity: '1',
+  unit: 'item',
+  storageLocation: 'pantry',
+  estimatedUseByDate: '',
+})
+
+const sortOptions = [
+  { title: 'Sort by Recently Added', value: 'recent' },
+  { title: 'Sort by Expiring Soon', value: 'expiry' },
+  { title: 'Sort by Needs Restocking', value: 'restock' },
+  { title: 'Sort A-Z', value: 'az' },
 ]
-
-function logPantryView(level: 'info' | 'warning' | 'error', message: string, data?: unknown): void {
-  const consoleMessage = `[Inventorie][Pantry][${level.toUpperCase()}] ${message}`
-
-  if (level === 'error') {
-    console.error(consoleMessage, data ?? {})
-  } else if (level === 'warning') {
-    console.warn(consoleMessage, data ?? {})
-  } else {
-    console.info(consoleMessage, data ?? {})
-  }
-}
-
-function isFreshnessStatus(status: unknown): status is FreshnessStatus {
-  return groupConfig.some((group) => group.key === status)
-}
-
-function normalizeFreshnessStatus(status: unknown): FreshnessStatus {
-  return isFreshnessStatus(status) ? status : 'unknown'
-}
+const storageLocationItems = (
+  Object.entries(storageLocationLabels) as Array<[StorageLocation, string]>
+).map(([value, title]) => ({
+  value,
+  title,
+}))
+const selectedManualIngredient = computed(
+  () =>
+    ingredientOptions.find((ingredient) => ingredient.value === manualForm.ingredientId) ?? null,
+)
+const manualQuantityValidation = computed(() =>
+  validateQuantityInput(manualForm.quantity, manualForm.unit),
+)
+const manualQuantityErrorMessage = computed(() => manualQuantityValidation.value.errorMessage)
 
 function isPantryItemRecord(item: unknown): item is Partial<PantryItem> {
   return Boolean(item) && typeof item === 'object'
-}
-
-function makeItemRenderKey(
-  item: Partial<PantryItem>,
-  fallbackIndex: number,
-  seenKeys: Map<string, number>,
-): string {
-  const id = typeof item.id === 'string' && item.id.trim() ? item.id : ''
-  const baseKey = id ? `pantry-item:${id}` : `pantry-item:missing-id-${fallbackIndex}`
-  const seenCount = seenKeys.get(baseKey) ?? 0
-  seenKeys.set(baseKey, seenCount + 1)
-
-  return seenCount === 0 ? baseKey : `${baseKey}:duplicate-${seenCount}`
 }
 
 const safePantryItems = computed<Partial<PantryItem>[]>(() =>
   Array.isArray(pantryStore.items) ? pantryStore.items.filter(isPantryItemRecord) : [],
 )
 
-const pantryGroups = computed<PantryGroup[]>(() => {
-  const seenKeys = new Map<string, number>()
-  const groups = groupConfig.map((group) => ({
-    ...group,
-    items: [] as PantryRenderItem[],
-  }))
-  const groupsByKey = new Map(groups.map((group) => [group.key, group]))
+const visibleItems = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  const items = query
+    ? safePantryItems.value.filter((item) =>
+        String(item.displayName ?? '')
+          .toLowerCase()
+          .includes(query),
+      )
+    : safePantryItems.value
 
-  safePantryItems.value.forEach((item, index) => {
-    const group = groupsByKey.get(normalizeFreshnessStatus(item.freshnessStatus))
-
-    if (!group) {
-      return
+  return [...items].sort((first, second) => {
+    if (sortMode.value === 'az') {
+      return String(first.displayName ?? '').localeCompare(String(second.displayName ?? ''))
     }
 
-    group.items.push({
-      item,
-      renderKey: makeItemRenderKey(item, index, seenKeys),
-    })
-  })
+    if (sortMode.value === 'expiry') {
+      return String(first.estimatedUseByDate ?? '9999').localeCompare(
+        String(second.estimatedUseByDate ?? '9999'),
+      )
+    }
 
-  return groups.filter((group) => group.items.length > 0)
+    if (sortMode.value === 'restock') {
+      return Number(first.quantity ?? 0) - Number(second.quantity ?? 0)
+    }
+
+    return String(second.addedAt ?? second.createdAt ?? '').localeCompare(
+      String(first.addedAt ?? first.createdAt ?? ''),
+    )
+  })
 })
 
-const hasPantryItems = computed(() => safePantryItems.value.length > 0)
-const showGroupedList = computed(() => !pantryStore.isLoading && hasPantryItems.value)
-const showEmptyState = computed(() => !pantryStore.isLoading && !hasPantryItems.value)
+function normalizeStorageLocation(location: unknown): StorageLocation {
+  return typeof location === 'string' && location in storageLocationLabels
+    ? (location as StorageLocation)
+    : 'pantry'
+}
+
+function fromDateInputValue(dateInput: string): string | null {
+  if (!dateInput) {
+    return null
+  }
+
+  const date = new Date(`${dateInput}T00:00:00.000`)
+
+  return Number.isNaN(date.getTime()) ? null : date.toISOString()
+}
+
+function resetManualForm() {
+  manualForm.ingredientId = null
+  manualForm.displayName = ''
+  manualForm.description = ''
+  manualForm.quantity = '1'
+  manualForm.unit = 'item'
+  manualForm.storageLocation = 'pantry'
+  manualForm.estimatedUseByDate = ''
+  manualSaveErrorMessage.value = null
+}
+
+function openManualDialog(prefill?: Partial<ManualItemForm>) {
+  resetManualForm()
+  if (prefill) {
+    manualForm.ingredientId = prefill.ingredientId ?? null
+    manualForm.displayName = prefill.displayName ?? ''
+    manualForm.description = prefill.description ?? ''
+    manualForm.quantity = prefill.quantity ?? '1'
+    manualForm.unit = prefill.unit ?? 'item'
+    manualForm.storageLocation = prefill.storageLocation ?? 'pantry'
+    manualForm.estimatedUseByDate = prefill.estimatedUseByDate ?? ''
+  }
+  manualDialogOpen.value = true
+}
+
+async function saveManualItem() {
+  if (isSavingManualItem.value) {
+    return
+  }
+
+  const quantityResult = manualQuantityValidation.value
+
+  if (quantityResult.errorMessage || !quantityResult.quantity) {
+    manualSaveErrorMessage.value = quantityResult.errorMessage ?? 'Quantity is invalid.'
+    return
+  }
+
+  isSavingManualItem.value = true
+  manualSaveErrorMessage.value = null
+
+  try {
+    await pantryStore.addManualItem({
+      ingredientId: manualForm.ingredientId,
+      displayName: manualForm.displayName.trim(),
+      description: manualForm.description,
+      quantity: quantityResult.quantity,
+      unit: manualForm.unit,
+      storageLocation: manualForm.storageLocation,
+      estimatedUseByDate: fromDateInputValue(manualForm.estimatedUseByDate),
+    })
+    manualDialogOpen.value = false
+    showManualSaveSnackbar.value = true
+    resetManualForm()
+  } catch (error) {
+    manualSaveErrorMessage.value =
+      error instanceof Error ? error.message : 'Could not add this item.'
+  } finally {
+    isSavingManualItem.value = false
+  }
+}
 
 onMounted(async () => {
-  logPantryView('info', 'PantryView mounted.')
   await pantryStore.loadPantryItems()
+
+  if (route.query.dialog === 'manual') {
+    openManualDialog({
+      ingredientId: typeof route.query.ingredientId === 'string' ? route.query.ingredientId : null,
+      displayName: typeof route.query.displayName === 'string' ? route.query.displayName : '',
+      quantity: typeof route.query.quantity === 'string' ? route.query.quantity : '1',
+      unit: typeof route.query.unit === 'string' ? route.query.unit : 'item',
+    })
+  }
 })
 
 watch(
-  pantryGroups,
-  (groups) => {
-    logPantryView('info', 'Rendered pantry group count.', {
-      count: groups.length,
-    })
-  },
-  { flush: 'post' },
-)
-
-watch(
-  showEmptyState,
-  (isDisplayed) => {
-    if (isDisplayed) {
-      logPantryView('info', 'Empty pantry state displayed.')
+  () => manualForm.ingredientId,
+  () => {
+    if (selectedManualIngredient.value && !manualForm.displayName.trim()) {
+      manualForm.displayName = selectedManualIngredient.value.title
     }
   },
-  { flush: 'post' },
 )
 </script>
 
 <template>
-  <section class="pantry-view app-page app-stack">
-    <div class="pantry-view__header">
-      <div class="app-page-heading">
-        <h2>Pantry vault</h2>
-        <p>Saved grocery items with simple estimated freshness dates.</p>
-      </div>
-      <app-button class="pantry-view__scan-action" icon="mdi-image-search-outline" to="/app/scan">
-        Add from scan
-      </app-button>
-    </div>
+  <section class="pantry-view app-page app-mobile-shell">
+    <header class="mock-hero">
+      <h1>INVENTORY</h1>
+    </header>
 
-    <v-alert class="pantry-view__notice" icon="mdi-information-outline" variant="tonal">
-      Freshness dates are general storage guidelines, not guaranteed safety dates. Always check
-      smell, texture, appearance, packaging date, and proper storage conditions.
-    </v-alert>
+    <div class="pantry-view__controls">
+      <v-text-field
+        v-model="searchQuery"
+        clearable
+        hide-details
+        placeholder="Search here..."
+        variant="outlined"
+      />
+      <v-select v-model="sortMode" :items="sortOptions" hide-details variant="outlined" />
+      <div class="pantry-view__actions">
+        <app-button block icon="mdi-image-search-outline" to="/app/scan">Add from scan</app-button>
+        <app-button
+          block
+          icon="mdi-plus-circle-outline"
+          tone="secondary"
+          variant="tonal"
+          @click="openManualDialog"
+        >
+          Add manually
+        </app-button>
+      </div>
+    </div>
 
     <v-alert
       v-if="pantryStore.errorMessage"
@@ -149,60 +240,154 @@ watch(
       {{ pantryStore.errorMessage }}
     </v-alert>
 
-    <div v-show="hasPantryItems" class="pantry-view__summary">
-      <pantry-summary-card
-        :fresh-count="pantryStore.summary.fresh"
-        :past-suggested-date-count="pantryStore.summary.pastSuggestedDate"
-        :total-items="pantryStore.summary.total"
-        :use-soon-count="pantryStore.summary.useSoon"
+    <div v-if="pantryStore.isLoading" class="pantry-view__loading">
+      <v-progress-circular color="primary" indeterminate />
+    </div>
+
+    <div v-else-if="visibleItems.length" class="pantry-view__list">
+      <pantry-item-card
+        v-for="(item, index) in visibleItems"
+        :key="`${item.id ?? 'pantry-item'}-${index}`"
+        :item="item"
+        @delete="pantryStore.deletePantryItem"
       />
     </div>
 
-    <div v-show="pantryStore.isLoading" class="pantry-view__loading">
-      <v-progress-circular color="accent" indeterminate />
-    </div>
+    <empty-state
+      v-else
+      icon="mdi-fridge-outline"
+      title="Nothing further"
+      description="Scan a grocery image or add an item manually to build your inventory."
+      action-label="Add item"
+      @action="openManualDialog"
+    />
 
-    <div v-show="showGroupedList" class="pantry-view__groups">
-      <section v-for="group in pantryGroups" :key="group.key" class="pantry-view__group">
-        <div class="pantry-view__group-heading">
-          <v-icon :icon="group.icon" size="small" />
-          <h3>{{ group.label }}</h3>
-        </div>
-        <v-row>
-          <v-col v-for="groupItem in group.items" :key="groupItem.renderKey" cols="12" sm="6">
-            <pantry-item-card :item="groupItem.item" @delete="pantryStore.deletePantryItem" />
-          </v-col>
-        </v-row>
-      </section>
-    </div>
+    <v-dialog v-model="manualDialogOpen" max-width="620">
+      <v-card class="pantry-view__manual-dialog" border elevation="8">
+        <v-card-item>
+          <template #prepend>
+            <v-avatar class="pantry-view__manual-icon" size="44">
+              <v-icon icon="mdi-plus-circle-outline" />
+            </v-avatar>
+          </template>
+          <v-card-title>Add inventory item</v-card-title>
+          <v-card-subtitle>Save an item without scanning.</v-card-subtitle>
+          <template #append>
+            <v-btn
+              aria-label="Close manual item form"
+              icon="mdi-close"
+              variant="text"
+              @click="manualDialogOpen = false"
+            />
+          </template>
+        </v-card-item>
 
-    <div v-show="showEmptyState" class="pantry-view__empty">
-      <empty-state
-        icon="mdi-safe-square-outline"
-        title="Your pantry is empty"
-        description="Scan a source image to save grocery items and freshness date estimates."
-        action-label="New scan"
-        action-to="/app/scan"
-      />
-    </div>
+        <v-card-text class="pantry-view__manual-content">
+          <v-alert
+            v-if="manualSaveErrorMessage"
+            color="error"
+            icon="mdi-alert-circle-outline"
+            variant="tonal"
+          >
+            {{ manualSaveErrorMessage }}
+          </v-alert>
+
+          <v-autocomplete
+            v-model="manualForm.ingredientId"
+            :items="ingredientOptions"
+            clearable
+            item-title="title"
+            item-value="value"
+            label="Known ingredient"
+            variant="outlined"
+          />
+
+          <v-text-field v-model="manualForm.displayName" label="Item name" variant="outlined" />
+
+          <v-text-field v-model="manualForm.description" label="Description" variant="outlined" />
+
+          <div class="pantry-view__manual-fields">
+            <v-text-field
+              v-model="manualForm.quantity"
+              :error-messages="manualQuantityErrorMessage ? [manualQuantityErrorMessage] : []"
+              :inputmode="getQuantityInputMode(manualForm.unit)"
+              label="Quantity"
+              type="text"
+              variant="outlined"
+            />
+            <select-menu-field
+              v-model="manualForm.unit"
+              :items="quantityUnitOptions"
+              label="Unit"
+            />
+          </div>
+
+          <select-menu-field
+            :model-value="manualForm.storageLocation"
+            :items="storageLocationItems"
+            label="Storage location"
+            @update:model-value="manualForm.storageLocation = normalizeStorageLocation($event)"
+          />
+
+          <v-text-field
+            v-model="manualForm.estimatedUseByDate"
+            label="Expiration date"
+            type="date"
+            variant="outlined"
+          />
+        </v-card-text>
+
+        <v-card-actions class="pantry-view__manual-actions">
+          <app-button
+            :disabled="!manualForm.displayName.trim()"
+            :loading="isSavingManualItem"
+            icon="mdi-content-save-outline"
+            @click="saveManualItem"
+          >
+            Save item
+          </app-button>
+          <app-button tone="ghost" variant="tonal" @click="manualDialogOpen = false">
+            Cancel
+          </app-button>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <v-snackbar v-model="showManualSaveSnackbar" timeout="1600">
+      <v-icon icon="mdi-check-circle-outline" start />
+      Item added to your inventory.
+    </v-snackbar>
   </section>
 </template>
 
 <style scoped>
-.pantry-view__header {
+.pantry-view {
   display: grid;
   gap: var(--space-4);
+  padding-bottom: var(--space-10);
 }
 
-.pantry-view__scan-action {
-  width: 100%;
+.pantry-view__controls,
+.pantry-view__list {
+  display: grid;
+  gap: var(--space-4);
+  padding-inline: var(--space-4);
 }
 
-.pantry-view__notice {
-  color: var(--color-primary-dark);
-  background: var(--color-secondary-soft);
-  border: 1px solid color-mix(in srgb, var(--color-secondary) 36%, transparent);
-  box-shadow: var(--shadow-xs);
+.pantry-view__actions {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.pantry-view__controls :deep(.v-field) {
+  color: var(--color-surface);
+  background: #005bd7;
+  border-radius: var(--radius-xl);
+}
+
+.pantry-view__controls :deep(input::placeholder) {
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 1;
 }
 
 .pantry-view__loading {
@@ -211,36 +396,39 @@ watch(
   place-items: center;
 }
 
-.pantry-view__group {
+.pantry-view__manual-dialog {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  border-radius: var(--radius-xl);
+}
+
+.pantry-view__manual-icon {
+  color: var(--color-primary);
+  background: var(--color-primary-soft);
+}
+
+.pantry-view__manual-content {
   display: grid;
   gap: var(--space-3);
 }
 
-.pantry-view__groups {
+.pantry-view__manual-fields {
   display: grid;
-  gap: var(--space-5);
+  gap: var(--space-3);
 }
 
-.pantry-view__group-heading {
-  display: inline-flex;
-  gap: var(--space-2);
-  align-items: center;
-  color: var(--color-primary-dark);
+.pantry-view__manual-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-inline: var(--space-4);
+  padding-bottom: var(--space-4);
 }
 
-.pantry-view__group-heading h3 {
-  margin: 0;
-  font-size: 1.05rem;
-}
-
-@media (min-width: 720px) {
-  .pantry-view__header {
-    grid-template-columns: 1fr auto;
-    align-items: start;
-  }
-
-  .pantry-view__scan-action {
-    width: auto;
+@media (min-width: 680px) {
+  .pantry-view__actions,
+  .pantry-view__manual-fields {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 </style>

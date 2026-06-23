@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import type { RouteLocationRaw } from 'vue-router'
 
 const props = withDefaults(
   defineProps<{
@@ -8,7 +9,7 @@ const props = withDefaults(
     tone?: 'primary' | 'secondary' | 'accent' | 'ghost' | 'danger' | 'success'
     icon?: string
     appendIcon?: string
-    to?: string
+    to?: RouteLocationRaw
     block?: boolean
     disabled?: boolean
     loading?: boolean
