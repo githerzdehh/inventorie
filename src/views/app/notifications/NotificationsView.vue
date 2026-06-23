@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useNotificationsStore, type AppNotification } from '@/stores/notifications'
 
 const router = useRouter()
 const notificationsStore = useNotificationsStore()
 
-const notificationIcon = computed<Record<AppNotification['kind'], string>>(() => ({
+const notificationIcons: Record<AppNotification['kind'], string> = {
   friend_gift: 'mdi-gift-outline',
   restock: 'mdi-cart-arrow-down',
   freshness: 'mdi-clock-alert-outline',
-}))
+}
 
 function formatNotificationTime(value: string): string {
   return new Intl.DateTimeFormat('en', {
@@ -65,7 +64,7 @@ async function openNotification(notification: AppNotification) {
       >
         <v-card-text class="notifications-view__item-content">
           <v-avatar class="notifications-view__item-icon" size="48">
-            <v-icon :icon="notificationIcon[notification.kind]" />
+            <v-icon :icon="notificationIcons[notification.kind]" />
           </v-avatar>
           <div class="notifications-view__copy">
             <div class="notifications-view__title-row">

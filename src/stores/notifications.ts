@@ -34,6 +34,13 @@ interface NotificationsState {
   successMessage: string | null
 }
 
+function cloneNotification(notification: AppNotification): AppNotification {
+  return {
+    ...notification,
+    giftItems: notification.giftItems?.map((item) => ({ ...item })),
+  }
+}
+
 const initialNotifications: AppNotification[] = [
   {
     id: 'friend-gift-001',
@@ -123,13 +130,14 @@ function toGiftPantryItems(notification: AppNotification): PantryItem[] {
 
 export const useNotificationsStore = defineStore('notifications', {
   state: (): NotificationsState => ({
-    notifications: initialNotifications,
+    notifications: initialNotifications.map(cloneNotification),
     isProcessingGift: false,
     errorMessage: null,
     successMessage: null,
   }),
   getters: {
-    notificationById: (state) => (id: string) => state.notifications.find((item) => item.id === id),
+    notificationById: (state) => (id: string) =>
+      state.notifications.find((item) => item.id === id),
     unreadCount: (state) => state.notifications.filter((item) => item.unread).length,
   },
   actions: {

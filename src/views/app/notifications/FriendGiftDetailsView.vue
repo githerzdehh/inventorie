@@ -11,7 +11,9 @@ const notificationsStore = useNotificationsStore()
 const giftId = computed(() => String(route.params.id ?? ''))
 const gift = computed(() => notificationsStore.notificationById(giftId.value))
 const giftItems = computed(() => gift.value?.giftItems ?? [])
-const hasDecision = computed(() => gift.value?.giftStatus && gift.value.giftStatus !== 'pending')
+const hasDecision = computed(() =>
+  Boolean(gift.value?.giftStatus && gift.value.giftStatus !== 'pending'),
+)
 
 async function acceptGift() {
   await notificationsStore.acceptFriendGift(giftId.value)
@@ -74,7 +76,7 @@ function declineGift() {
 
       <div class="friend-gift-view__actions">
         <app-button
-          :disabled="Boolean(hasDecision)"
+          :disabled="hasDecision"
           :loading="notificationsStore.isProcessingGift"
           block
           icon="mdi-check-circle-outline"
@@ -83,7 +85,7 @@ function declineGift() {
           Accept gift
         </app-button>
         <app-button
-          :disabled="Boolean(hasDecision) || notificationsStore.isProcessingGift"
+          :disabled="hasDecision || notificationsStore.isProcessingGift"
           block
           icon="mdi-close-circle-outline"
           tone="danger"
