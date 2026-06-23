@@ -2,33 +2,14 @@
 import AppButton from '@/components/common/app-button.vue'
 import EmptyState from '@/components/common/empty-state.vue'
 import { formatDisplayDateTime } from '@/composables/date-utils'
-import {
-  type AppNotification,
-  type NotificationType,
-  useNotificationsStore,
-} from '@/stores/notifications'
+import { type NotificationType, useNotificationsStore } from '@/stores/notifications'
 
 const notificationsStore = useNotificationsStore()
 
 const notificationTypeLabels: Record<NotificationType, string> = {
-  'friend-gift': 'Friend gift',
   pantry: 'Pantry',
   recipe: 'Recipe',
   system: 'System',
-}
-
-function getNotificationIcon(notification: AppNotification): string {
-  return notification.type === 'friend-gift' ? 'mdi-gift-outline' : 'mdi-bell-outline'
-}
-
-function getNotificationTone(notification: AppNotification): string {
-  return notification.type === 'friend-gift' ? 'notifications-view__icon--gift' : ''
-}
-
-function notificationDetailsPath(notification: AppNotification): string | undefined {
-  return notification.type === 'friend-gift'
-    ? `/app/notifications/friend-gift/${notification.id}`
-    : undefined
 }
 </script>
 
@@ -37,7 +18,7 @@ function notificationDetailsPath(notification: AppNotification): string | undefi
     <div class="notifications-view__header">
       <div class="app-page-heading">
         <h2>Activity</h2>
-        <p>Review updates, shared inventory activity, and friend gift invitations.</p>
+        <p>Review updates, shared inventory activity, and app alerts.</p>
       </div>
 
       <div class="notifications-view__actions">
@@ -59,7 +40,7 @@ function notificationDetailsPath(notification: AppNotification): string | undefi
       v-if="notificationsStore.allNotifications.length === 0"
       icon="mdi-bell-outline"
       title="No notifications yet"
-      description="Updates about pantry activity, recipes, and friend gifts will appear here."
+      description="Updates about pantry activity, recipes, and app alerts will appear here."
     />
 
     <div v-else class="notifications-view__list">
@@ -73,12 +54,8 @@ function notificationDetailsPath(notification: AppNotification): string | undefi
       >
         <v-card-item>
           <template #prepend>
-            <v-avatar
-              class="notifications-view__icon"
-              :class="getNotificationTone(notification)"
-              size="44"
-            >
-              <v-icon :icon="getNotificationIcon(notification)" />
+            <v-avatar class="notifications-view__icon" size="44">
+              <v-icon icon="mdi-bell-outline" />
             </v-avatar>
           </template>
 
@@ -100,17 +77,6 @@ function notificationDetailsPath(notification: AppNotification): string | undefi
         <v-card-text>
           <p>{{ notification.description }}</p>
         </v-card-text>
-
-        <v-card-actions v-if="notificationDetailsPath(notification)">
-          <app-button
-            :to="notificationDetailsPath(notification)"
-            :aria-label="`Open details for ${notification.title}`"
-            icon="mdi-open-in-new"
-            variant="tonal"
-          >
-            View gift details
-          </app-button>
-        </v-card-actions>
       </v-card>
     </div>
   </section>
@@ -154,11 +120,6 @@ function notificationDetailsPath(notification: AppNotification): string | undefi
 .notifications-view__icon {
   color: var(--color-primary);
   background: var(--color-primary-soft);
-}
-
-.notifications-view__icon--gift {
-  color: var(--color-accent-dark);
-  background: var(--color-accent-soft);
 }
 
 @media (max-width: 640px) {
