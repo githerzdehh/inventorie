@@ -57,6 +57,28 @@ const hasAcceptedTerms = ref(false)
           </app-button>
         </v-card-actions>
       </v-card>
+
+      <v-card class="settings-view__preference-card" border elevation="0">
+        <v-card-item>
+          <template #prepend>
+            <v-avatar class="settings-view__icon" size="44">
+              <v-icon icon="mdi-bell-outline" />
+            </v-avatar>
+          </template>
+          <v-card-title>Notifications</v-card-title>
+          <v-card-subtitle>Review activity, friend gifts, and unread updates.</v-card-subtitle>
+        </v-card-item>
+        <v-card-actions>
+          <app-button
+            block
+            append-icon="mdi-chevron-right"
+            to="/app/notifications"
+            variant="tonal"
+          >
+            View Notifications
+          </app-button>
+        </v-card-actions>
+      </v-card>
     </div>
 
     <v-card class="settings-view__legal-card" border elevation="0">
