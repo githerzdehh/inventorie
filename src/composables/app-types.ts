@@ -113,10 +113,17 @@ export interface Recipe {
   name: string
   description: string
   ingredientIds: string[]
+  optionalIngredientIds?: string[]
   steps: string[]
   estimatedMinutes: number
   tags: string[]
   offlineAvailable: boolean
+  imageIcon?: string
+  likes?: number
+  ingredientLines?: string[]
+  prepSteps?: string[]
+  instructions?: string[]
+  savedByDefault?: boolean
 }
 
 export interface DetectedReceiptItem {
@@ -127,6 +134,8 @@ export interface DetectedReceiptItem {
   description: string | null
   quantity: number
   unit: string
+  storageLocation?: StorageLocation
+  estimatedUseByDate?: string | null
   confidence: number
   selected: boolean
 }
