@@ -52,7 +52,7 @@ const baseBottomNavItems: BottomNavItem[] = [
     icon: 'mdi-cog-outline',
     to: '/app/settings',
     value: 'settings',
-    matches: ['/app/settings'],
+    matches: ['/app/settings', '/app/notifications'],
   },
 ]
 
