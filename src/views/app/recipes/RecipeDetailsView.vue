@@ -19,7 +19,23 @@ const availableIngredientIds = computed(() =>
   pantryStore.items.map((item) => item.ingredientId).filter(Boolean),
 )
 const recipeMatch = computed(() =>
-  recipe.value ? recipesStore.recipeMatches(availableIngredientIds.value).find((match) => match.recipe.id === recipe.value?.id) : null,
+  recipe.value
+    ? recipesStore
+        .recipeMatches(availableIngredientIds.value)
+        .find((match) => match.recipe.id === recipe.value?.id)
+    : null,
+)
+const inInventoryIngredientIds = computed(() =>
+  recipeMatch.value
+    ? [
+        ...recipeMatch.value.matchedRequiredIngredientIds,
+        ...recipeMatch.value.matchedOptionalIngredientIds,
+      ]
+    : [],
+)
+const neededIngredientIds = computed(() => recipeMatch.value?.missingRequiredIngredientIds ?? [])
+const optionalAddOnIngredientIds = computed(
+  () => recipeMatch.value?.missingOptionalIngredientIds ?? recipe.value?.optionalIngredientIds ?? [],
 )
 const isSaved = computed(() =>
   recipe.value ? recipesStore.savedRecipeIds.includes(recipe.value.id) : false,
@@ -50,10 +66,26 @@ const socialShareLinks = computed(() => {
   const encodedTitle = encodeURIComponent(recipe.value.name)
 
   return [
-    { label: 'Facebook', icon: 'mdi-facebook', href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}` },
-    { label: 'WhatsApp', icon: 'mdi-whatsapp', href: `https://wa.me/?text=${encodedText}%20${encodedUrl}` },
-    { label: 'X', icon: 'mdi-twitter', href: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}` },
-    { label: 'Email', icon: 'mdi-email-outline', href: `mailto:?subject=${encodedTitle}&body=${encodedText}%0A%0A${encodedUrl}` },
+    {
+      label: 'Facebook',
+      icon: 'mdi-facebook',
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}`,
+    },
+    {
+      label: 'WhatsApp',
+      icon: 'mdi-whatsapp',
+      href: `https://wa.me/?text=${encodedText}%20${encodedUrl}`,
+    },
+    {
+      label: 'X',
+      icon: 'mdi-twitter',
+      href: `https://twitter.com/intent/tweet?text=${encodedText}&url=${encodedUrl}`,
+    },
+    {
+      label: 'Email',
+      icon: 'mdi-email-outline',
+      href: `mailto:?subject=${encodedTitle}&body=${encodedText}%0A%0A${encodedUrl}`,
+    },
   ]
 })
 
@@ -142,7 +174,9 @@ onMounted(async () => {
             {{ recipe.estimatedMinutes - 5 }}-{{ recipe.estimatedMinutes }} mins
           </p>
           <div class="recipe-details-view__meta">
-            <v-chip color="primary" size="small">{{ recipe.ingredientIds.length }} ingredients</v-chip>
+            <v-chip color="primary" size="small"
+              >{{ recipe.ingredientIds.length }} ingredients</v-chip
+            >
             <v-chip v-if="recipeMatch?.canCook" color="success" size="small">Ready to cook</v-chip>
             <v-chip v-else-if="recipeMatch" color="warning" size="small">
               {{ recipeMatch.matchedRequiredIngredientIds.length }} in inventory
@@ -197,38 +231,50 @@ onMounted(async () => {
             <strong>In inventory</strong>
             <div class="recipe-details-view__chips">
               <v-chip
-                v-for="ingredientId in recipeMatch?.matchedRequiredIngredientIds ?? []"
+                v-for="ingredientId in inInventoryIngredientIds"
                 :key="ingredientId"
                 size="small"
               >
                 {{ getIngredientName(ingredientId) }}
               </v-chip>
+              <span v-if="!inInventoryIngredientIds.length" class="recipe-details-view__empty-chip">
+                None yet
+              </span>
             </div>
           </div>
           <div class="recipe-details-view__ingredient-group">
             <strong>Needed</strong>
             <div class="recipe-details-view__chips">
               <v-chip
-                v-for="ingredientId in recipeMatch?.missingRequiredIngredientIds ?? recipe.ingredientIds"
+                v-for="ingredientId in neededIngredientIds"
                 :key="ingredientId"
                 size="small"
                 variant="tonal"
               >
                 {{ getIngredientName(ingredientId) }}
               </v-chip>
+              <span v-if="!neededIngredientIds.length" class="recipe-details-view__empty-chip">
+                Nothing required is missing
+              </span>
             </div>
           </div>
           <div class="recipe-details-view__ingredient-group">
-            <strong>Optional</strong>
+            <strong>Optional add-ons</strong>
             <div class="recipe-details-view__chips">
               <v-chip
-                v-for="ingredientId in recipe.optionalIngredientIds ?? []"
+                v-for="ingredientId in optionalAddOnIngredientIds"
                 :key="ingredientId"
                 size="small"
                 variant="outlined"
               >
                 {{ getIngredientName(ingredientId) }}
               </v-chip>
+              <span
+                v-if="!optionalAddOnIngredientIds.length"
+                class="recipe-details-view__empty-chip"
+              >
+                No optional add-ons missing
+              </span>
             </div>
           </div>
         </div>
@@ -390,6 +436,11 @@ onMounted(async () => {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2);
+}
+
+.recipe-details-view__empty-chip {
+  color: var(--color-muted);
+  font-size: 0.9rem;
 }
 
 .recipe-details-view ul,

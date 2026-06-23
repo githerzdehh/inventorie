@@ -91,7 +91,10 @@ const bestFromInventory = computed(() =>
 )
 const readyToCook = computed(() => inventoryMatches.value.filter((match) => match.canCook))
 const almostReady = computed(
-  () => inventoryMatches.value.filter((match) => !match.canCook && match.matchedRequiredIngredientIds.length > 0),
+  () =>
+    inventoryMatches.value.filter(
+      (match) => !match.canCook && match.matchedRequiredIngredientIds.length > 0,
+    ),
 )
 const hasInventory = computed(() => availableIngredientIds.value.length > 0)
 
@@ -112,7 +115,9 @@ function toggleTag(tag: string) {
 
 function getMatchLabel(match: RecipeMatch): string {
   if (match.canCook) {
-    return 'Ready from inventory'
+    return match.missingOptionalIngredientIds.length
+      ? 'Ready; optional add-ons available'
+      : 'Ready from inventory'
   }
 
   return `${match.matchedRequiredIngredientIds.length}/${match.requiredIngredientIds.length} required in inventory`
@@ -126,6 +131,10 @@ function getAvailableLabel(match: RecipeMatch): string {
 
 function getIngredientName(ingredientId: string): string {
   return getIngredientById(ingredientId)?.name ?? ingredientId
+}
+
+function getInInventoryIngredientIds(match: RecipeMatch): string[] {
+  return [...match.matchedRequiredIngredientIds, ...match.matchedOptionalIngredientIds]
 }
 
 function makeAddToInventoryQuery(match: RecipeMatch) {
@@ -289,12 +298,18 @@ onMounted(async () => {
                 <strong>In inventory</strong>
                 <div class="recipe-book-view__chips">
                   <v-chip
-                    v-for="ingredientId in match.matchedRequiredIngredientIds"
+                    v-for="ingredientId in getInInventoryIngredientIds(match)"
                     :key="ingredientId"
                     size="small"
                   >
                     {{ getIngredientName(ingredientId) }}
                   </v-chip>
+                  <span
+                    v-if="!getInInventoryIngredientIds(match).length"
+                    class="recipe-book-view__empty-chip"
+                  >
+                    None yet
+                  </span>
                 </div>
               </div>
               <div class="recipe-book-view__ingredient-group">
@@ -308,19 +323,31 @@ onMounted(async () => {
                   >
                     {{ getIngredientName(ingredientId) }}
                   </v-chip>
+                  <span
+                    v-if="!match.missingRequiredIngredientIds.length"
+                    class="recipe-book-view__empty-chip"
+                  >
+                    No required gaps
+                  </span>
                 </div>
               </div>
               <div class="recipe-book-view__ingredient-group">
-                <strong>Optional</strong>
+                <strong>Optional add-ons</strong>
                 <div class="recipe-book-view__chips">
                   <v-chip
-                    v-for="ingredientId in match.optionalIngredientIds"
+                    v-for="ingredientId in match.missingOptionalIngredientIds"
                     :key="ingredientId"
                     size="small"
                     variant="outlined"
                   >
                     {{ getIngredientName(ingredientId) }}
                   </v-chip>
+                  <span
+                    v-if="!match.missingOptionalIngredientIds.length"
+                    class="recipe-book-view__empty-chip"
+                  >
+                    No optional add-ons missing
+                  </span>
                 </div>
               </div>
             </div>
@@ -607,6 +634,11 @@ onMounted(async () => {
   color: var(--color-muted);
   font-size: 0.8rem;
   text-transform: uppercase;
+}
+
+.recipe-book-view__empty-chip {
+  color: var(--color-muted);
+  font-size: 0.82rem;
 }
 
 @media (min-width: 760px) {
