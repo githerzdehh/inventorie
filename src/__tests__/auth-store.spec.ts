@@ -157,6 +157,17 @@ describe('auth store', () => {
     expect(authStore.users.find((user) => user.id === 'admin')?.role).toBe('super_admin')
   })
 
+  it('requires a signed-in user before requesting account deletion', () => {
+    const authStore = useAuthStore()
+
+    expect(authStore.requestAccountDeletion('No longer needed')).toBe(false)
+    expect(authStore.errorMessage).toBe('You must be signed in to request account deletion.')
+
+    expect(authStore.login('user', 'user123')).toBe(true)
+    expect(authStore.requestAccountDeletion('No longer needed')).toBe(true)
+    expect(authStore.successMessage).toBe('Account deletion request submitted.')
+  })
+
   it('rejects invalid credentials and clears the session', () => {
     const authStore = useAuthStore()
 

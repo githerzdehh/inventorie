@@ -617,6 +617,24 @@ export const useAuthStore = defineStore('auth', {
 
       return true
     },
+    requestAccountDeletion(feedback: string): boolean {
+      if (!this.currentUser) {
+        this.errorMessage = 'You must be signed in to request account deletion.'
+        this.successMessage = null
+        return false
+      }
+
+      if (feedback.trim().length > 2000) {
+        this.errorMessage = 'Account deletion feedback must be 2,000 characters or fewer.'
+        this.successMessage = null
+        return false
+      }
+
+      this.errorMessage = null
+      this.successMessage = 'Account deletion request submitted.'
+
+      return true
+    },
     deleteUser(userId: string): boolean {
       const user = this.users.find((storedUser) => storedUser.id === userId)
 
